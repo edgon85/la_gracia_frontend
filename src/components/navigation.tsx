@@ -1,6 +1,8 @@
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { cn } from "@/lib/utils"
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
   Package,
@@ -9,39 +11,39 @@ import {
   Settings,
   FileText,
   Plus,
-  Bell
-} from "lucide-react"
+  Bell,
+} from 'lucide-react';
 
 export function Navigation() {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   const navigationItems = [
     {
-      title: "Dashboard",
-      href: "/dashboard",
+      title: 'Dashboard',
+      href: '/dashboard',
       icon: LayoutDashboard,
     },
     {
-      title: "Inventario",
-      href: "/dashboard/inventario",
+      title: 'Inventario',
+      href: '/dashboard/inventario',
       icon: Package,
     },
     {
-      title: "Pedidos",
-      href: "/dashboard/pedidos",
+      title: 'Pedidos',
+      href: '/dashboard/pedidos',
       icon: ShoppingCart,
     },
     {
-      title: "Reportes",
-      href: "/dashboard/reportes",
+      title: 'Reportes',
+      href: '/dashboard/reportes',
       icon: BarChart3,
     },
     {
-      title: "Configuración",
-      href: "/dashboard/configuracion",
+      title: 'Configuración',
+      href: '/dashboard/configuracion',
       icon: Settings,
     },
-  ]
+  ];
 
   return (
     <div className="pb-12">
@@ -56,8 +58,10 @@ export function Navigation() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                  pathname === item.href ? "bg-accent text-accent-foreground" : "transparent"
+                  'flex items-center rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground',
+                  pathname === item.href
+                    ? 'bg-accent text-accent-foreground'
+                    : 'transparent'
                 )}
               >
                 <item.icon className="mr-2 h-4 w-4" />
@@ -103,5 +107,5 @@ export function Navigation() {
         </div>
       </div>
     </div>
-  )
+  );
 }

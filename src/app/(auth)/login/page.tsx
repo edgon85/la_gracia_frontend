@@ -1,5 +1,3 @@
-'use client';
-
 import { loginAction } from '@/actions/auth.actions';
 import { Button } from '@/components/ui/button';
 import {
@@ -51,8 +49,8 @@ export default function LoginForm() {
         toast.error(result.error);
       } else {
         toast.success('Inicio de sesión exitoso');
-        // Pasar el usuario directamente al store
-        await login(result.user);
+        // Actualizar el store de autenticación
+        await login();
         router.push('/dashboard');
         router.refresh();
       }
@@ -62,88 +60,88 @@ export default function LoginForm() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <Card className="w-full max-w-md">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">
-          Iniciar Sesión
-        </CardTitle>
-        <CardDescription className="text-center">
-          Sistema de Inventario Hospitalario
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {/* Email */}
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="usuario@hospital.com"
-              {...form.register('email')}
-              disabled={isPending}
-            />
-            {form.formState.errors.email && (
-              <p className="text-sm text-red-500">
-                {form.formState.errors.email.message}
-              </p>
-            )}
-          </div>
-
-          {/* Password */}
-          <div className="space-y-2">
-            <Label htmlFor="password">Contraseña</Label>
-            <div className="relative">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center">
+            Iniciar Sesión
+          </CardTitle>
+          <CardDescription className="text-center">
+            Sistema de Inventario Hospitalario
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Email */}
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••"
-                {...form.register('password')}
+                id="email"
+                type="email"
+                placeholder="usuario@hospital.com"
+                {...form.register('email')}
                 disabled={isPending}
               />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                onClick={() => setShowPassword(!showPassword)}
-                disabled={isPending}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </Button>
+              {form.formState.errors.email && (
+                <p className="text-sm text-red-500">
+                  {form.formState.errors.email.message}
+                </p>
+              )}
             </div>
-            {form.formState.errors.password && (
-              <p className="text-sm text-red-500">
-                {form.formState.errors.password.message}
-              </p>
-            )}
-          </div>
 
-          {/* Submit Button */}
-          <Button type="submit" className="w-full" disabled={isPending}>
-            {isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Iniciando sesión...
-              </>
-            ) : (
-              'Iniciar Sesión'
-            )}
-          </Button>
-        </form>
-      </CardContent>
-      <CardFooter className="flex flex-col space-y-2">
-        <div className="text-sm text-center text-muted-foreground">
-          ¿No tienes cuenta?{' '}
-          <a href="/register" className="text-primary hover:underline">
-            Registrarse
-          </a>
-        </div>
-      </CardFooter>
-    </Card>
+            {/* Password */}
+            <div className="space-y-2">
+              <Label htmlFor="password">Contraseña</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  {...form.register('password')}
+                  disabled={isPending}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={isPending}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              {form.formState.errors.password && (
+                <p className="text-sm text-red-500">
+                  {form.formState.errors.password.message}
+                </p>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <Button type="submit" className="w-full" disabled={isPending}>
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Iniciando sesión...
+                </>
+              ) : (
+                'Iniciar Sesión'
+              )}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter className="flex flex-col space-y-2">
+          <div className="text-sm text-center text-muted-foreground">
+            ¿No tienes cuenta?{' '}
+            <a href="/register" className="text-primary hover:underline">
+              Registrarse
+            </a>
+          </div>
+        </CardFooter>
+      </Card>
     </div>
   );
 }

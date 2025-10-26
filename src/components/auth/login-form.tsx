@@ -1,3 +1,5 @@
+'use client';
+
 import { useRouter } from 'next/router';
 import { useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
@@ -11,10 +13,11 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '../ui/card';
-import { Label } from '../ui/label';
-import { Input } from '../ui/input';
-import { Button } from '../ui/button';
+  Button,
+  Input,
+  Label,
+} from '../ui';
+
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/stores';
 import { loginAction } from '@/actions/auth.actions';
