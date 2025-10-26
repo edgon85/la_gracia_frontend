@@ -40,7 +40,7 @@ export function Navigation() {
     },
     {
       title: 'Configuración',
-      href: '/dashboard/configuracion',
+      href: '/dashboard/configuración',
       icon: Settings,
     },
   ];

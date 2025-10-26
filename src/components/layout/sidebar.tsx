@@ -16,9 +16,9 @@ import {
   BellRing,
   ChevronDown,
   ChevronRight,
-  X,
-  LogOut,
+  X
 } from 'lucide-react';
+import { LogoutButton } from '../buttons';
 
 interface SubMenuItem {
   label: string;
@@ -51,7 +51,11 @@ const menuItems: MenuItem[] = [
     subItems: [
       { label: 'Categorias', href: '/dashboard/productos/categorias' },
       { label: 'Lotes', href: '/dashboard/productos/lotes' },
-      { label: 'Proximos a vencer', href: '/dashboard/productos/vencimiento', badge: 12 },
+      {
+        label: 'Proximos a vencer',
+        href: '/dashboard/productos/vencimiento',
+        badge: 12,
+      },
     ],
   },
   {
@@ -77,7 +81,11 @@ const menuItems: MenuItem[] = [
     icon: FileText,
     badge: 8,
     subItems: [
-      { label: 'Pendientes', href: '/dashboard/solicitudes/pendientes', badge: 8 },
+      {
+        label: 'Pendientes',
+        href: '/dashboard/solicitudes/pendientes',
+        badge: 8,
+      },
       { label: 'Aprobadas', href: '/dashboard/solicitudes/aprobadas' },
       { label: 'Historial', href: '/dashboard/solicitudes/historial' },
     ],
@@ -110,10 +118,7 @@ const menuItems: MenuItem[] = [
   },
 ];
 
-
-
 export const Sidebar = (props: SidebarProps) => {
-
   const { isOpen, onClose } = props;
   const pathname = usePathname();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -134,10 +139,6 @@ export const Sidebar = (props: SidebarProps) => {
       return subItems.some((item) => pathname === item.href);
     }
     return false;
-  };
-
-  const handleLogout = () => {
-    console.log('Logging out...');
   };
 
   return (
@@ -165,8 +166,12 @@ export const Sidebar = (props: SidebarProps) => {
                 <span className="text-white font-bold text-xl">HM</span>
               </div>
               <div>
-                <h1 className="font-bold text-gray-900 dark:text-white">La Gracia</h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Hospital</p>
+                <h1 className="font-bold text-gray-900 dark:text-white">
+                  La Gracia
+                </h1>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Hospital
+                </p>
               </div>
             </div>
             <button
@@ -271,17 +276,10 @@ export const Sidebar = (props: SidebarProps) => {
           </nav>
 
           <div className="p-4 border-t border-gray-200 dark:border-gray-800">
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
-                text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-            >
-              <LogOut className="w-5 h-5" />
-              <span>Cerrar sesion</span>
-            </button>
+            <LogoutButton />
           </div>
         </div>
       </aside>
     </>
   );
-}
+};

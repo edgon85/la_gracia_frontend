@@ -1,23 +1,21 @@
 'use client';
 
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
-  Button,
-  Input,
-  Label,
-} from '../ui';
-
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/stores';
 import { loginAction } from '@/actions/auth.actions';
@@ -54,7 +52,7 @@ export function LoginForm() {
         toast.success('Inicio de sesión exitoso');
         checkAuth(); // Actualizar el estado del store
         router.push('/dashboard');
-        // router.refresh();
+        router.refresh();
       }
     });
   };
@@ -134,14 +132,14 @@ export function LoginForm() {
           </Button>
         </form>
       </CardContent>
-      <CardFooter className="flex flex-col space-y-2">
+      {/*  <CardFooter className="flex flex-col space-y-2">
         <div className="text-sm text-center text-muted-foreground">
           ¿No tienes cuenta?{' '}
-          <a href="/register" className="text-primary hover:underline">
+          <Link href="/register" className="text-primary hover:underline">
             Registrarse
-          </a>
+          </Link>
         </div>
-      </CardFooter>
+      </CardFooter> */}
     </Card>
   );
 }
