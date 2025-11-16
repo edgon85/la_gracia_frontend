@@ -46,13 +46,13 @@ const menuItems: MenuItem[] = [
     href: '/dashboard',
   },
   {
-    label: 'Productos',
+    label: 'Catalogo',
     icon: Package,
     subItems: [
-      { label: 'Categorias', href: '/dashboard/productos/categorias' },
-      { label: 'Lotes', href: '/dashboard/productos/lotes' },
+      { label: 'Productos', href: '/dashboard/products' },
+      { label: 'Categorías', href: '/dashboard/categories' },
       {
-        label: 'Proximos a vencer',
+        label: 'Próximos a vencer',
         href: '/dashboard/productos/vencimiento',
         badge: 12,
       },
