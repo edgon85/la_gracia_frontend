@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, ReactNode } from 'react';
+import { useState, ReactNode, useEffect } from 'react';
 import { Sidebar, Navbar } from '.';
+import { useAuthStore } from '@/stores/auth.store';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -9,6 +10,13 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { checkAuth } = useAuthStore();
+
+  // Inicializar el auth store desde las cookies al montar el layout
+  useEffect(() => {
+    console.log('DashboardLayout mounted, checking auth');
+    checkAuth();
+  }, [checkAuth]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
