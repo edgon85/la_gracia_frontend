@@ -93,7 +93,7 @@ const menuItems: MenuItem[] = [
   {
     label: 'Proveedores',
     icon: Truck,
-    href: '/dashboard/proveedores',
+    href: '/dashboard/providers',
   },
   {
     label: 'Compras',
