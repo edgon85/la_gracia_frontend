@@ -15,14 +15,12 @@ export function getCookie(name: string): string | null {
 export function getUserFromCookie() {
   const userCookie = getCookie('user');
 
-  console.log('All cookies:', document.cookie);
-  console.log('User cookie value:', userCookie);
-  
   if (!userCookie) return null;
 
   try {
-    const parsed = JSON.parse(userCookie);
-    console.log('Parsed user:', parsed);
+    // Decodificar la cookie URL-encoded antes de parsear
+    const decodedCookie = decodeURIComponent(userCookie);
+    const parsed = JSON.parse(decodedCookie);
     return parsed;
   } catch (error) {
     console.log('Error parsing user cookie:', error);
