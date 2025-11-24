@@ -10,6 +10,7 @@ export enum Role {
 export interface IUser {
   id: string;
   email: string;
+  username: string;
   fullName: string;
   isActive: boolean;
   roles: string[];
@@ -17,7 +18,7 @@ export interface IUser {
 }
 
 export interface ILoginRequest {
-  email: string;
+  identifier: string;
   password: string;
 }
 

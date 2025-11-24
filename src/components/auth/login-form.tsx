@@ -22,7 +22,7 @@ import { loginAction } from '@/actions/auth.actions';
 
 // Schema de validación con Zod
 const loginSchema = z.object({
-  email: z.email('Email inválido'),
+  identifier: z.string().min(1, 'El usuario o email es requerido'),
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
 });
 
@@ -37,7 +37,7 @@ export function LoginForm() {
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
+      identifier: '',
       password: '',
     },
   });
@@ -69,19 +69,19 @@ export function LoginForm() {
       </CardHeader>
       <CardContent>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {/* Email */}
+          {/* Identifier (Email o Username) */}
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="identifier">Usuario o Email</Label>
             <Input
-              id="email"
-              type="email"
-              placeholder="usuario@hospital.com"
-              {...form.register('email')}
+              id="identifier"
+              type="text"
+              placeholder="usuario@hospital.com o nombre_usuario"
+              {...form.register('identifier')}
               disabled={isPending}
             />
-            {form.formState.errors.email && (
+            {form.formState.errors.identifier && (
               <p className="text-sm text-red-500">
-                {form.formState.errors.email.message}
+                {form.formState.errors.identifier.message}
               </p>
             )}
           </div>
@@ -132,14 +132,6 @@ export function LoginForm() {
           </Button>
         </form>
       </CardContent>
-      {/*  <CardFooter className="flex flex-col space-y-2">
-        <div className="text-sm text-center text-muted-foreground">
-          ¿No tienes cuenta?{' '}
-          <Link href="/register" className="text-primary hover:underline">
-            Registrarse
-          </Link>
-        </div>
-      </CardFooter> */}
     </Card>
   );
 }
