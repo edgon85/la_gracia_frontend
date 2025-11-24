@@ -6,6 +6,7 @@ import { IProduct, IProductFilters, IProductsResponse } from '@/lib';
 import { ProductsTable } from '@/components/products/ProductsTable';
 import { ProductFilters } from '@/components/products/ProductFilters';
 import { Pagination } from '@/components/products/Pagination';
+import { CreateProductButton } from '@/components/products/CreateProductButton';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
@@ -103,13 +104,16 @@ export function ProductsPage({ initialData }: ProductsPageProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          Catálogo de Productos
-        </h1>
-        <p className="text-muted-foreground">
-          Administra y consulta el inventario de productos del hospital
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Catálogo de Productos
+          </h1>
+          <p className="text-muted-foreground">
+            Administra y consulta el inventario de productos del hospital
+          </p>
+        </div>
+        <CreateProductButton />
       </div>
 
       {/* Filters */}
@@ -146,3 +150,23 @@ export function ProductsPage({ initialData }: ProductsPageProps) {
     </div>
   );
 }
+/* {
+    "data": [
+        {
+            "id": "51751f5e-b8cf-4301-be66-62b0c5531734",
+            "name": "Equipo de Protección Personal",
+            "code": "EPP",
+            "description": "Guantes, mascarillas, batas, gorros",
+            "color": "#10B981",
+            "isActive": true,
+            "createdAt": "2025-10-26T11:23:46.274Z",
+            "updatedAt": "2025-10-26T11:23:46.274Z"
+        },
+    ],
+    "meta": {
+        "total": 15,
+        "page": 1,
+        "limit": 10,
+        "totalPages": 2
+    }
+} */

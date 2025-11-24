@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { IProduct } from '@/lib';
 import {
   Table,
@@ -10,7 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUpDown } from 'lucide-react';
+import { ArrowUpDown, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ProductsTableProps {
@@ -26,10 +27,16 @@ export function ProductsTable({
   sortField,
   sortOrder,
 }: ProductsTableProps) {
+  const router = useRouter();
+
   const handleSort = (field: string) => {
     if (onSort) {
       onSort(field);
     }
+  };
+
+  const handleEdit = (id: string) => {
+    router.push(`/dashboard/products/${id}/edit`);
   };
 
   const getSortIcon = (field: string) => {
@@ -100,12 +107,13 @@ export function ProductsTable({
               </Button>
             </TableHead>
             <TableHead>Estado</TableHead>
+            <TableHead className="text-right">Acciones</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {products.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} className="h-24 text-center">
+              <TableCell colSpan={9} className="h-24 text-center">
                 No se encontraron productos.
               </TableCell>
             </TableRow>
@@ -149,6 +157,16 @@ export function ProductsTable({
                     ) : (
                       <Badge variant="destructive">Inactivo</Badge>
                     )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEdit(product.id)}
+                      title="Editar producto"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               );
