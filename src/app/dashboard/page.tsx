@@ -7,11 +7,11 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components';
 import { User, Shield } from 'lucide-react';
-import { getCurrentUser } from '@/actions/auth.actions';
+import { getValidatedUser } from '@/actions/auth.actions';
 import { redirect } from 'next/navigation';
 
 export default async function DashboardPage() {
-  const user = await getCurrentUser();
+  const user = await getValidatedUser();
 
   if (!user) {
     redirect('/login');

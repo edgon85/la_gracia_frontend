@@ -1,10 +1,10 @@
 import { LoginForm } from '@/components/auth/login-form';
-import { getCurrentUser } from '@/actions/auth.actions';
+import { getValidatedUser } from '@/actions/auth.actions';
 import { redirect } from 'next/navigation';
 
 export default async function LoginPage() {
-  // Si el usuario ya está autenticado, redirigir al dashboard
-  const user = await getCurrentUser();
+  // Si el usuario ya está autenticado (validado con backend), redirigir al dashboard
+  const user = await getValidatedUser();
 
   if (user) {
     redirect('/dashboard');

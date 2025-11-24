@@ -8,11 +8,42 @@ import { ILoginRequest, IRegisterRequest, IAuthResponse, IUser } from '@/lib';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 // Helper para manejar errores
-function handleError(error: any) {
+function handleError(error: unknown) {
   if (error instanceof Error) {
     return { error: error.message };
   }
   return { error: 'Error desconocido' };
+}
+
+// Helper para guardar auth cookies
+async function setAuthCookies(data: IAuthResponse) {
+  const cookieStore = await cookies();
+
+  // Guardar token en cookies (httpOnly para mayor seguridad)
+  cookieStore.set('token', data.token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 7, // 7 días
+  });
+
+  // Guardar user en cookies (no httpOnly para poder leerlo en el cliente)
+  const { token, ...userWithoutToken } = data;
+  cookieStore.set('user', JSON.stringify(userWithoutToken), {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 7,
+  });
+
+  return userWithoutToken;
+}
+
+// Helper para limpiar auth cookies
+async function clearAuthCookies() {
+  const cookieStore = await cookies();
+  cookieStore.delete('token');
+  cookieStore.delete('user');
 }
 
 // Login Action
@@ -35,27 +66,9 @@ export async function loginAction(credentials: ILoginRequest) {
     }
 
     const data: IAuthResponse = await response.json();
-    console.log(data);
-    
-    // Guardar token en cookies (httpOnly para mayor seguridad)
-    (await cookies()).set('token', data.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 días
-    });
+    const user = await setAuthCookies(data);
 
-  // Guardar user en cookies (no httpOnly para poder leerlo en el cliente)
-    // Removemos el token antes de guardarlo
-    const { token, ...userWithoutToken } = data;
-    (await cookies()).set('user', JSON.stringify(userWithoutToken), {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
-    });
-
-    return { success: true, user: userWithoutToken };
+    return { success: true, user };
   } catch (error) {
     return handleError(error);
   }
@@ -81,24 +94,9 @@ export async function registerAction(data: IRegisterRequest) {
     }
 
     const responseData: IAuthResponse = await response.json();
+    const user = await setAuthCookies(responseData);
 
-    // Guardar token y user en cookies
-    (await cookies()).set('token', responseData.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
-    });
-
-    const { token, ...userWithoutToken } = responseData;
-    (await cookies()).set('user', JSON.stringify(userWithoutToken), {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
-    });
-
-    return { success: true, user: userWithoutToken };
+    return { success: true, user };
   } catch (error) {
     return handleError(error);
   }
@@ -106,8 +104,7 @@ export async function registerAction(data: IRegisterRequest) {
 
 // Logout Action
 export async function logoutAction() {
-  (await cookies()).delete('token');
-  (await cookies()).delete('user');
+  await clearAuthCookies();
   redirect('/login');
 }
 
@@ -136,4 +133,90 @@ export async function checkAuth(): Promise<boolean> {
 export async function getToken(): Promise<string | null> {
   const token = (await cookies()).get('token');
   return token?.value || null;
+}
+
+// Verificar estado de autenticación con el backend (SIN actualizar cookies)
+// Usa esto para validar que el token sigue siendo válido
+export async function verifyTokenAction(): Promise<
+  { valid: true; user: Omit<IUser, 'token'> } | { valid: false; error: string }
+> {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      return { valid: false, error: 'No autenticado' };
+    }
+
+    const response = await fetch(`${API_URL}/auth/check-status`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      // Token inválido o expirado - limpiar cookies
+      await clearAuthCookies();
+      return { valid: false, error: 'Sesión expirada o inválida' };
+    }
+
+    const data: IAuthResponse = await response.json();
+    const { token: _, ...userWithoutToken } = data;
+
+    return { valid: true, user: userWithoutToken };
+  } catch (error) {
+    const err = handleError(error);
+    return { valid: false, error: err.error };
+  }
+}
+
+// Verificar estado y REFRESCAR token (actualiza cookies)
+// Usa esto cuando necesites refrescar el token explícitamente
+export async function refreshTokenAction(): Promise<
+  { success: true; user: Omit<IUser, 'token'> } | { error: string }
+> {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      return { error: 'No autenticado' };
+    }
+
+    const response = await fetch(`${API_URL}/auth/check-status`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      await clearAuthCookies();
+      return { error: 'Sesión expirada o inválida' };
+    }
+
+    const data: IAuthResponse = await response.json();
+
+    // Actualizar cookies con el nuevo token
+    const user = await setAuthCookies(data);
+
+    return { success: true, user };
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+// Obtener usuario validado con el backend (sin modificar cookies)
+// Usa esto en páginas protegidas para verificar que el token es válido
+export async function getValidatedUser(): Promise<Omit<IUser, 'token'> | null> {
+  const result = await verifyTokenAction();
+
+  if (!result.valid) {
+    return null;
+  }
+
+  return result.user;
 }

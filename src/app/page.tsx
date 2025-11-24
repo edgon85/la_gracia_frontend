@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
-import { getCurrentUser } from '@/actions/auth.actions';
+import { getValidatedUser } from '@/actions/auth.actions';
 
 export default async function Home() {
-  const user = await getCurrentUser();
+  const user = await getValidatedUser();
 
   redirect(user ? '/dashboard' : '/login');
 }

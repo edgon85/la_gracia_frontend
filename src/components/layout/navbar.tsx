@@ -15,6 +15,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { LogoutButton } from '../buttons';
+import { useAuthStore } from '@/stores/auth.store';
 
 interface NavbarProps {
   onMenuClick: () => void;
@@ -67,9 +68,31 @@ const mockNotifications: Notification[] = [
 export const Navbar = (props: NavbarProps) => {
   const { onMenuClick } = props;
   const { theme, setTheme } = useTheme();
+  const { user } = useAuthStore();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Obtener iniciales del nombre
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  // Obtener el rol principal para mostrar
+  const getPrimaryRole = (roles: string[]) => {
+    if (roles.includes('admin')) return 'Administrador';
+    if (roles.includes('FARMACIA')) return 'Farmacia';
+    if (roles.includes('BODEGA')) return 'Bodega';
+    if (roles.includes('MEDICO')) return 'Médico';
+    if (roles.includes('ENFERMERO')) return 'Enfermero';
+    if (roles.includes('AUDITOR')) return 'Auditor';
+    return roles[0] || 'Usuario';
+  };
 
   const unreadCount = mockNotifications.filter((n) => !n.read).length;
 
@@ -227,14 +250,16 @@ export const Navbar = (props: NavbarProps) => {
               className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
             >
               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">JD</span>
+                <span className="text-white font-semibold text-sm">
+                  {user ? getInitials(user.fullName) : '??'}
+                </span>
               </div>
               <div className="hidden md:block text-left">
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  Dr. Juan Perez
+                  {user?.fullName || 'Usuario'}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Administrador
+                  {user ? getPrimaryRole(user.roles) : 'Cargando...'}
                 </p>
               </div>
               <ChevronDown className="w-4 h-4 text-gray-500" />
@@ -249,10 +274,10 @@ export const Navbar = (props: NavbarProps) => {
                 <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
                   <div className="p-3 border-b border-gray-200 dark:border-gray-700">
                     <p className="font-semibold text-gray-900 dark:text-white">
-                      Dr. Juan Perez
+                      {user?.fullName || 'Usuario'}
                     </p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      juan.perez@lagracia.com
+                      {user?.username || ''}
                     </p>
                   </div>
                   <div className="p-2">
