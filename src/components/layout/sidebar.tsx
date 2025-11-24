@@ -103,7 +103,7 @@ const menuItems: MenuItem[] = [
   {
     label: 'Usuarios',
     icon: Users,
-    href: '/dashboard/usuarios',
+    href: '/dashboard/users',
   },
   {
     label: 'Reportes',
