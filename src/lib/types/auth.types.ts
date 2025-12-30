@@ -15,6 +15,21 @@ export interface IUser {
   isActive: boolean;
   roles: string[];
   token: string;
+  mustResetPassword?: boolean;
+}
+
+export interface IChangePasswordRequest {
+  newPassword: string;
+}
+
+export interface IUpdateProfileRequest {
+  fullName?: string;
+  email?: string;
+}
+
+export interface IChangePasswordVoluntaryRequest {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export interface ILoginRequest {
@@ -36,8 +51,9 @@ export interface IAuthState {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: () => Promise<void>;
+  login: (userData?: Partial<IUser>) => Promise<void>;
   register: () => Promise<void>;
   logout: () => void;
   checkAuth: () => void;
+  updateUser: (userData: Partial<IUser>) => void;
 }

@@ -3,7 +3,15 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 // Tipos temporales hasta que se definan las interfaces
-import { ILoginRequest, IRegisterRequest, IAuthResponse, IUser } from '@/lib';
+import {
+  ILoginRequest,
+  IRegisterRequest,
+  IAuthResponse,
+  IUser,
+  IChangePasswordRequest,
+  IUpdateProfileRequest,
+  IChangePasswordVoluntaryRequest,
+} from '@/lib';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -68,7 +76,11 @@ export async function loginAction(credentials: ILoginRequest) {
     const data: IAuthResponse = await response.json();
     const user = await setAuthCookies(data);
 
-    return { success: true, user };
+    return {
+      success: true,
+      user,
+      mustResetPassword: data.mustResetPassword ?? false,
+    };
   } catch (error) {
     return handleError(error);
   }
@@ -219,4 +231,143 @@ export async function getValidatedUser(): Promise<Omit<IUser, 'token'> | null> {
   }
 
   return result.user;
+}
+
+// Change Password Action
+// Usado cuando mustResetPassword es true después del login
+export async function changePasswordAction(data: IChangePasswordRequest) {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      return { error: 'No autenticado' };
+    }
+
+    const response = await fetch(`${API_URL}/auth/change-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return {
+        error: errorData.message || 'Error al cambiar la contraseña',
+      };
+    }
+
+    // Actualizar la cookie del usuario para quitar mustResetPassword
+    const userCookie = (await cookies()).get('user');
+    if (userCookie) {
+      const user = JSON.parse(userCookie.value);
+      user.mustResetPassword = false;
+      const cookieStore = await cookies();
+      cookieStore.set('user', JSON.stringify(user), {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7,
+      });
+    }
+
+    return { success: true };
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+// Update Profile Action
+// Permite al usuario actualizar su nombre y email
+export async function updateProfileAction(data: IUpdateProfileRequest) {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      return { error: 'No autenticado' };
+    }
+
+    const response = await fetch(`${API_URL}/auth/profile`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return {
+        error: errorData.message || 'Error al actualizar el perfil',
+      };
+    }
+
+    const updatedUser: IAuthResponse = await response.json();
+
+    // Actualizar la cookie del usuario con los nuevos datos
+    const userCookie = (await cookies()).get('user');
+    if (userCookie) {
+      const currentUser = JSON.parse(userCookie.value);
+      const newUserData = {
+        ...currentUser,
+        fullName: updatedUser.fullName,
+        email: updatedUser.email,
+      };
+      const cookieStore = await cookies();
+      cookieStore.set('user', JSON.stringify(newUserData), {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7,
+      });
+    }
+
+    return { success: true, user: updatedUser };
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+// Change Password Voluntary Action
+// Permite al usuario cambiar su contraseña voluntariamente desde el perfil
+// Usa PATCH /auth/profile con currentPassword y password
+export async function changePasswordVoluntaryAction(
+  data: IChangePasswordVoluntaryRequest
+) {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      return { error: 'No autenticado' };
+    }
+
+    const response = await fetch(`${API_URL}/auth/profile`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
+      }),
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return {
+        error: errorData.message || 'Error al cambiar la contraseña',
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    return handleError(error);
+  }
 }

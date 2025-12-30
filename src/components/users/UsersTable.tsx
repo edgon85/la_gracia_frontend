@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { IUserListItem } from '@/lib';
 import {
@@ -12,7 +13,27 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Pencil, Shield } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Pencil,
+  Shield,
+  KeyRound,
+  Loader2,
+  Eye,
+  EyeOff,
+  AlertTriangle,
+} from 'lucide-react';
+import { resetUserPasswordAction } from '@/actions/user.actions';
+import { toast } from 'sonner';
 
 interface UsersTableProps {
   users: IUserListItem[];
@@ -21,9 +42,90 @@ interface UsersTableProps {
 
 export function UsersTable({ users, isAdmin }: UsersTableProps) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [resetPasswordModal, setResetPasswordModal] = useState<{
+    open: boolean;
+    user: IUserListItem | null;
+    step: 'input' | 'confirm';
+  }>({ open: false, user: null, step: 'input' });
+  const [temporaryPassword, setTemporaryPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleEdit = (id: string) => {
     router.push(`/dashboard/users/${id}/edit`);
+  };
+
+  const handleOpenResetModal = (user: IUserListItem) => {
+    setResetPasswordModal({ open: true, user, step: 'input' });
+    setTemporaryPassword('');
+    setShowPassword(false);
+  };
+
+  const handleCloseResetModal = () => {
+    setResetPasswordModal({ open: false, user: null, step: 'input' });
+    setTemporaryPassword('');
+    setShowPassword(false);
+  };
+
+  const handleGoToConfirm = () => {
+    if (!temporaryPassword) return;
+
+    if (temporaryPassword.length < 6) {
+      toast.error('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
+    setResetPasswordModal((prev) => ({ ...prev, step: 'confirm' }));
+  };
+
+  const handleBackToInput = () => {
+    setResetPasswordModal((prev) => ({ ...prev, step: 'input' }));
+  };
+
+  const handleResetPassword = () => {
+    if (!resetPasswordModal.user || !temporaryPassword) return;
+
+    startTransition(async () => {
+      const result = await resetUserPasswordAction(
+        resetPasswordModal.user!.id,
+        temporaryPassword
+      );
+
+      if ('error' in result) {
+        toast.error(result.error);
+      } else {
+        toast.success(
+          `Contraseña reseteada para ${resetPasswordModal.user!.fullName}. El usuario deberá cambiarla en su próximo inicio de sesión.`
+        );
+        handleCloseResetModal();
+      }
+    });
+  };
+
+  const generateRandomPassword = () => {
+    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+    const numbers = '0123456789';
+    const allChars = uppercase + lowercase + numbers;
+
+    // Garantizar al menos una mayúscula, una minúscula y un número
+    let password =
+      uppercase.charAt(Math.floor(Math.random() * uppercase.length)) +
+      lowercase.charAt(Math.floor(Math.random() * lowercase.length)) +
+      numbers.charAt(Math.floor(Math.random() * numbers.length));
+
+    // Completar hasta 10 caracteres con caracteres aleatorios
+    for (let i = 0; i < 7; i++) {
+      password += allChars.charAt(Math.floor(Math.random() * allChars.length));
+    }
+
+    // Mezclar los caracteres para que no siempre empiece igual
+    password = password
+      .split('')
+      .sort(() => Math.random() - 0.5)
+      .join('');
+
+    setTemporaryPassword(password);
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -130,14 +232,24 @@ export function UsersTable({ users, isAdmin }: UsersTableProps) {
                 </TableCell>
                 {isAdmin && (
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(user.id)}
-                      title="Editar usuario"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleOpenResetModal(user)}
+                        title="Resetear contraseña"
+                      >
+                        <KeyRound className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(user.id)}
+                        title="Editar usuario"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 )}
               </TableRow>
@@ -145,6 +257,141 @@ export function UsersTable({ users, isAdmin }: UsersTableProps) {
           )}
         </TableBody>
       </Table>
+
+      {/* Modal de resetear contraseña */}
+      <Dialog open={resetPasswordModal.open} onOpenChange={handleCloseResetModal}>
+        <DialogContent>
+          {resetPasswordModal.step === 'input' ? (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <KeyRound className="h-5 w-5" />
+                  Resetear Contraseña
+                </DialogTitle>
+                <DialogDescription>
+                  Establece una contraseña temporal para{' '}
+                  <strong>{resetPasswordModal.user?.fullName}</strong>.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="temporaryPassword">Contraseña Temporal</Label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Input
+                        id="temporaryPassword"
+                        type={showPassword ? 'text' : 'password'}
+                        value={temporaryPassword}
+                        onChange={(e) => setTemporaryPassword(e.target.value)}
+                        placeholder="Ingresa una contraseña temporal"
+                        disabled={isPending}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={generateRandomPassword}
+                      disabled={isPending}
+                    >
+                      Generar
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Mínimo 6 caracteres. Comparte esta contraseña con el usuario
+                    de forma segura.
+                  </p>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={handleCloseResetModal}
+                  disabled={isPending}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleGoToConfirm}
+                  disabled={!temporaryPassword || temporaryPassword.length < 6}
+                >
+                  Continuar
+                </Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-amber-500" />
+                  Confirmar Reseteo de Contraseña
+                </DialogTitle>
+                <DialogDescription className="pt-2 space-y-3">
+                  <p>
+                    Estás a punto de resetear la contraseña de{' '}
+                    <strong>{resetPasswordModal.user?.fullName}</strong> (
+                    {resetPasswordModal.user?.username}).
+                  </p>
+                  <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-3 space-y-2">
+                    <p className="font-medium text-amber-800 dark:text-amber-200">
+                      Al confirmar:
+                    </p>
+                    <ul className="text-sm text-amber-700 dark:text-amber-300 list-disc list-inside space-y-1">
+                      <li>La contraseña actual del usuario será reemplazada</li>
+                      <li>
+                        Si el usuario tiene una sesión activa, seguirá
+                        funcionando hasta que cierre sesión
+                      </li>
+                      <li>
+                        El usuario deberá cambiar esta contraseña temporal en su
+                        próximo inicio de sesión
+                      </li>
+                    </ul>
+                  </div>
+                  <p className="text-sm">
+                    Asegúrate de comunicar la nueva contraseña al usuario de
+                    forma segura.
+                  </p>
+                </DialogDescription>
+              </DialogHeader>
+
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button
+                  variant="outline"
+                  onClick={handleBackToInput}
+                  disabled={isPending}
+                >
+                  Volver
+                </Button>
+                <Button onClick={handleResetPassword} disabled={isPending}>
+                  {isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Reseteando...
+                    </>
+                  ) : (
+                    'Confirmar Reseteo'
+                  )}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

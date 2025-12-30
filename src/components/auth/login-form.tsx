@@ -50,8 +50,14 @@ export function LoginForm() {
         toast.error(result.error);
       } else {
         toast.success('Inicio de sesión exitoso');
-        checkAuth(); // Actualizar el estado del store
-        router.push('/dashboard');
+        checkAuth();
+
+        // Si el usuario debe cambiar su contraseña, redirigir a change-password
+        if (result.mustResetPassword) {
+          router.push('/change-password');
+        } else {
+          router.push('/dashboard');
+        }
         router.refresh();
       }
     });

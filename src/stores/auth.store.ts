@@ -74,4 +74,11 @@ export const useAuthStore = create<IAuthState>((set) => ({
       });
     }
   },
+
+  // Actualizar datos del usuario sin recargar desde cookies
+  updateUser: (userData) => {
+    set((state) => ({
+      user: state.user ? { ...state.user, ...userData } : null,
+    }));
+  },
 }));

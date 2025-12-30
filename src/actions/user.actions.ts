@@ -298,3 +298,42 @@ export async function deleteUserAction(
     };
   }
 }
+
+// Resetear contraseña de usuario (solo admin)
+// Establece una contraseña temporal y activa mustResetPassword
+export async function resetUserPasswordAction(
+  id: string,
+  temporaryPassword: string
+): Promise<{ success: true } | { error: string }> {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      return { error: 'No autenticado' };
+    }
+
+    const response = await fetch(`${API_URL}/auth/users/${id}/reset-password`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ newPassword: temporaryPassword }),
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return {
+        error: errorData.message || 'Error al resetear la contraseña',
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error resetting user password:', error);
+    return {
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}

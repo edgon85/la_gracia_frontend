@@ -41,9 +41,9 @@ export function CategoryFilters({ onFilterChange, onReset }: CategoryFiltersProp
   };
 
   return (
-    <div className="space-y-4">
+    <Card className="p-4 space-y-4">
       {/* Barra de búsqueda principal */}
-      <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -71,7 +71,7 @@ export function CategoryFilters({ onFilterChange, onReset }: CategoryFiltersProp
 
       {/* Panel de filtros expandible */}
       {showFilters && (
-        <Card className="p-4">
+        <div className="border-t pt-4">
           <div className="grid gap-4">
             {/* Filtro de estado */}
             <div className="space-y-2">
@@ -98,8 +98,8 @@ export function CategoryFilters({ onFilterChange, onReset }: CategoryFiltersProp
             </Button>
             <Button onClick={handleApplyFilters}>Aplicar filtros</Button>
           </div>
-        </Card>
+        </div>
       )}
-    </div>
+    </Card>
   );
 }

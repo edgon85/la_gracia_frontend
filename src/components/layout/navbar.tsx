@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useTheme } from 'next-themes';
+import { useRouter } from 'next/navigation';
 import {
   Search,
   Bell,
@@ -67,6 +68,7 @@ const mockNotifications: Notification[] = [
 
 export const Navbar = (props: NavbarProps) => {
   const { onMenuClick } = props;
+  const router = useRouter();
   const { theme, setTheme } = useTheme();
   const { user } = useAuthStore();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -74,7 +76,8 @@ export const Navbar = (props: NavbarProps) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Obtener iniciales del nombre
-  const getInitials = (name: string) => {
+  const getInitials = (name?: string) => {
+    if (!name) return '??';
     return name
       .split(' ')
       .map((n) => n[0])
@@ -281,7 +284,13 @@ export const Navbar = (props: NavbarProps) => {
                     </p>
                   </div>
                   <div className="p-2">
-                    <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        router.push('/dashboard/profile');
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    >
                       <User className="w-4 h-4" />
                       <span>Mi perfil</span>
                     </button>
