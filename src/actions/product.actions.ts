@@ -1,6 +1,6 @@
 'use server';
 
-import { IProductsResponse, IProductFilters, ICreateProductRequest, IUpdateProductRequest, IProduct } from '@/lib';
+import { IProductsResponse, IProductFilters, ICreateProductRequest, IUpdateProductRequest, IProduct, ICreateBatchRequest, IBatch } from '@/lib';
 import { getToken } from './auth.actions';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -232,6 +232,44 @@ export async function deleteProductAction(
     return { success: true };
   } catch (error) {
     console.error('Error deleting product:', error);
+    return {
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+export async function addBatchToProductAction(
+  productId: string,
+  data: ICreateBatchRequest
+): Promise<{ success: true; batch: IBatch } | { error: string }> {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      return { error: 'No autenticado' };
+    }
+
+    const response = await fetch(`${API_URL}/products/${productId}/batches`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return {
+        error: errorData.message || 'Error al agregar lote',
+      };
+    }
+
+    const batch: IBatch = await response.json();
+    return { success: true, batch };
+  } catch (error) {
+    console.error('Error adding batch:', error);
     return {
       error: error instanceof Error ? error.message : 'Error desconocido',
     };

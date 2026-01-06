@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { IProduct } from '@/lib';
 import {
@@ -11,14 +12,16 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUpDown, Pencil } from 'lucide-react';
+import { ArrowUpDown, Pencil, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ProductDetailModal } from './ProductDetailModal';
 
 interface ProductsTableProps {
   products: IProduct[];
   onSort?: (field: string) => void;
   sortField?: string;
   sortOrder?: 'asc' | 'desc';
+  onRefresh?: () => void;
 }
 
 export function ProductsTable({
@@ -26,8 +29,16 @@ export function ProductsTable({
   onSort,
   sortField,
   sortOrder,
+  onRefresh,
 }: ProductsTableProps) {
   const router = useRouter();
+  const [selectedProduct, setSelectedProduct] = useState<IProduct | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleViewDetail = (product: IProduct) => {
+    setSelectedProduct(product);
+    setIsModalOpen(true);
+  };
 
   const handleSort = (field: string) => {
     if (onSort) {
@@ -127,7 +138,14 @@ export function ProductsTable({
                   <TableCell className="font-medium">
                     {product.internalCode}
                   </TableCell>
-                  <TableCell>{product.commercialName}</TableCell>
+                  <TableCell>
+                    <button
+                      onClick={() => handleViewDetail(product)}
+                      className="text-left hover:text-primary hover:underline cursor-pointer transition-colors"
+                    >
+                      {product.commercialName}
+                    </button>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {product.genericName}
                   </TableCell>
@@ -162,6 +180,14 @@ export function ProductsTable({
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={() => handleViewDetail(product)}
+                      title="Ver detalle"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => handleEdit(product.id)}
                       title="Editar producto"
                     >
@@ -174,6 +200,13 @@ export function ProductsTable({
           )}
         </TableBody>
       </Table>
+
+      <ProductDetailModal
+        product={selectedProduct}
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        onBatchAdded={onRefresh}
+      />
     </div>
   );
 }

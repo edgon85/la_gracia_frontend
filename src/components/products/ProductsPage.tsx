@@ -135,6 +135,7 @@ export function ProductsPage({ initialData }: ProductsPageProps) {
               onSort={handleSort}
               sortField={sortField}
               sortOrder={sortOrder}
+              onRefresh={fetchProducts}
             />
             <Pagination
               currentPage={currentPage}

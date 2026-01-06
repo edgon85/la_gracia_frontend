@@ -164,6 +164,16 @@ export interface ICreateProductRequest {
   initialBatch: IInitialBatch;
 }
 
+export interface ICreateBatchRequest {
+  batchNumber: string;
+  expiryDate: string;
+  manufacturingDate: string;
+  quantity: number;
+  purchasePrice: number;
+  salePrice: number;
+  notes?: string;
+}
+
 export interface IUpdateProductRequest {
   internalCode?: string;
   commercialName?: string;
