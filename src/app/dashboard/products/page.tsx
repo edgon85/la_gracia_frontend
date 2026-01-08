@@ -1,7 +1,10 @@
 import { getProductsAction } from '@/actions/product.actions';
+import { getValidatedUserWithPermission } from '@/actions/auth.actions';
 import { ProductsPage } from '@/components/products/ProductsPage';
 
 export default async function ProductPage() {
+  // Verificar permisos: solo usuarios con acceso a 'products' pueden ver
+  await getValidatedUserWithPermission('products', 'view');
   // Fetch initial data from server
   const initialFilters = {
     page: 1,

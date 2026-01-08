@@ -3,8 +3,11 @@ import { ProviderForm } from '@/components/providers/ProviderForm';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { getValidatedUserWithPermission } from '@/actions/auth.actions';
 
-export default function NewProviderPage() {
+export default async function NewProviderPage() {
+  // Verificar permisos: solo usuarios con permiso 'create' en providers
+  await getValidatedUserWithPermission('providers', 'create');
   return (
     <div className="space-y-6">
       {/* Header */}

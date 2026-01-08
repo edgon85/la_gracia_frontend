@@ -1,7 +1,10 @@
 import { getCategoriesAction } from '@/actions/category.actions';
+import { getValidatedUserWithPermission } from '@/actions/auth.actions';
 import { CategoriesPage } from '@/components/categories/CategoriesPage';
 
 export default async function CategoryPage() {
+  // Verificar permisos: solo usuarios con acceso a 'categories' pueden ver
+  await getValidatedUserWithPermission('categories', 'view');
   // Fetch initial data from server
   const initialFilters = {
     page: 1,

@@ -1,6 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { ProductForm } from '@/components/products/ProductForm';
 import { getProductByIdAction } from '@/actions/product.actions';
+import { getValidatedUserWithPermission } from '@/actions/auth.actions';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,9 @@ interface EditProductPageProps {
 }
 
 export default async function EditProductPage({ params }: EditProductPageProps) {
+  // Verificar permisos: solo usuarios con permiso 'edit' en products
+  await getValidatedUserWithPermission('products', 'edit');
+
   const { id } = await params;
   const response = await getProductByIdAction(id);
 

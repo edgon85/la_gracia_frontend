@@ -12,6 +12,7 @@ import {
   IUpdateProfileRequest,
   IChangePasswordVoluntaryRequest,
 } from '@/lib';
+import { Module, Action, hasPermission, canAccessRoute } from '@/lib/permissions';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -370,4 +371,58 @@ export async function changePasswordVoluntaryAction(
   } catch (error) {
     return handleError(error);
   }
+}
+
+// ==================== PERMISSIONS ====================
+
+/**
+ * Verifica si el usuario actual tiene permiso para acceder a un módulo/acción
+ * Usa esto en Server Components para proteger páginas
+ */
+export async function checkPermission(
+  module: Module,
+  action: Action = 'view'
+): Promise<boolean> {
+  const user = await getValidatedUser();
+
+  if (!user) {
+    return false;
+  }
+
+  return hasPermission(user.roles, module, action);
+}
+
+/**
+ * Verifica si el usuario actual puede acceder a una ruta
+ */
+export async function checkRouteAccess(pathname: string): Promise<boolean> {
+  const user = await getValidatedUser();
+
+  if (!user) {
+    return false;
+  }
+
+  return canAccessRoute(user.roles, pathname);
+}
+
+/**
+ * Obtiene el usuario validado y verifica permisos
+ * Redirige a /dashboard si no tiene permisos
+ * Redirige a /login si no está autenticado
+ */
+export async function getValidatedUserWithPermission(
+  module: Module,
+  action: Action = 'view'
+): Promise<Omit<IUser, 'token'>> {
+  const user = await getValidatedUser();
+
+  if (!user) {
+    redirect('/login');
+  }
+
+  if (!hasPermission(user.roles, module, action)) {
+    redirect('/dashboard?error=access_denied');
+  }
+
+  return user;
 }

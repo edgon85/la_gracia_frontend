@@ -3,8 +3,11 @@ import { CategoryForm } from '@/components/categories/CategoryForm';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { getValidatedUserWithPermission } from '@/actions/auth.actions';
 
-export default function NewCategoryPage() {
+export default async function NewCategoryPage() {
+  // Verificar permisos: solo usuarios con permiso 'create' en categories
+  await getValidatedUserWithPermission('categories', 'create');
   return (
     <div className="space-y-6">
       {/* Header */}

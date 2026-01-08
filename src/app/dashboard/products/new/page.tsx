@@ -3,8 +3,11 @@ import { ProductForm } from '@/components/products/ProductForm';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { getValidatedUserWithPermission } from '@/actions/auth.actions';
 
-export default function NewProductPage() {
+export default async function NewProductPage() {
+  // Verificar permisos: solo usuarios con permiso 'create' en products
+  await getValidatedUserWithPermission('products', 'create');
   return (
     <div className="space-y-6">
       {/* Header */}

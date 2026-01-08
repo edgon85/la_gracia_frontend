@@ -23,6 +23,7 @@ import {
 import { getValidatedUser } from '@/actions/auth.actions';
 import { getProductsAction } from '@/actions/product.actions';
 import { redirect } from 'next/navigation';
+import { hasPermission, Module, Action } from '@/lib/permissions';
 
 export default async function DashboardPage() {
   const user = await getValidatedUser();
@@ -31,8 +32,15 @@ export default async function DashboardPage() {
     redirect('/login');
   }
 
-  // Obtener estadísticas de productos
-  const productsResponse = await getProductsAction({ limit: 1000 });
+  // Helper para verificar permisos
+  const can = (module: Module, action: Action = 'view') =>
+    hasPermission(user.roles, module, action);
+
+  // Obtener estadísticas de productos solo si tiene permisos
+  const canViewProducts = can('products');
+  const productsResponse = canViewProducts
+    ? await getProductsAction({ limit: 1000 })
+    : { data: [] };
   const products = 'error' in productsResponse ? [] : productsResponse.data;
 
   const totalProducts = products.length;
@@ -41,8 +49,8 @@ export default async function DashboardPage() {
   ).length;
   const outOfStockProducts = products.filter((p) => p.totalStock <= 0).length;
 
-  // Accesos rápidos principales
-  const quickActions = [
+  // Accesos rápidos principales - con permisos
+  const allQuickActions = [
     {
       title: 'Dispensar Productos',
       description: 'Registrar salida de medicamentos',
@@ -50,6 +58,8 @@ export default async function DashboardPage() {
       href: '/dashboard/farmacia/despachos',
       color: 'bg-blue-500',
       highlight: true,
+      module: 'pharmacy' as Module,
+      action: 'view' as Action,
     },
     {
       title: 'Ver Productos',
@@ -57,6 +67,8 @@ export default async function DashboardPage() {
       icon: Package,
       href: '/dashboard/products',
       color: 'bg-green-500',
+      module: 'products' as Module,
+      action: 'view' as Action,
     },
     {
       title: 'Nuevo Producto',
@@ -64,6 +76,8 @@ export default async function DashboardPage() {
       icon: Plus,
       href: '/dashboard/products/new',
       color: 'bg-purple-500',
+      module: 'products' as Module,
+      action: 'create' as Action,
     },
     {
       title: 'Proveedores',
@@ -71,39 +85,89 @@ export default async function DashboardPage() {
       icon: Truck,
       href: '/dashboard/providers',
       color: 'bg-orange-500',
+      module: 'providers' as Module,
+      action: 'view' as Action,
     },
   ];
 
-  // Módulos del sistema
-  const modules: {
+  // Filtrar acciones según permisos
+  const quickActions = allQuickActions.filter((action) =>
+    can(action.module, action.action)
+  );
+
+  // Módulos del sistema - con permisos
+  type ModuleItem = {
+    label: string;
+    href: string;
+    count?: number;
+    highlight?: boolean;
+    module: Module;
+    action?: Action;
+  };
+
+  type SystemModule = {
     title: string;
-    items: { label: string; href: string; count?: number; highlight?: boolean }[];
-  }[] = [
+    module: Module; // Módulo principal para mostrar/ocultar la sección
+    items: ModuleItem[];
+  };
+
+  const allModules: SystemModule[] = [
     {
       title: 'Catálogo',
+      module: 'products',
       items: [
-        { label: 'Productos', href: '/dashboard/products', count: totalProducts },
-        { label: 'Categorías', href: '/dashboard/categories' },
-        { label: 'Próximos a vencer', href: '/dashboard/productos/vencimiento' },
+        {
+          label: 'Productos',
+          href: '/dashboard/products',
+          count: totalProducts,
+          module: 'products',
+        },
+        {
+          label: 'Categorías',
+          href: '/dashboard/categories',
+          module: 'categories',
+        },
+        {
+          label: 'Próximos a vencer',
+          href: '/dashboard/productos/vencimiento',
+          module: 'products',
+        },
       ],
     },
     {
       title: 'Farmacia',
+      module: 'pharmacy',
       items: [
-        { label: 'Dispensación', href: '/dashboard/farmacia/despachos', highlight: true },
-        { label: 'Recetas', href: '/dashboard/farmacia/recetas' },
-        { label: 'Stock', href: '/dashboard/farmacia/stock' },
+        {
+          label: 'Dispensación',
+          href: '/dashboard/farmacia/despachos',
+          highlight: true,
+          module: 'pharmacy',
+        },
+        {
+          label: 'Stock',
+          href: '/dashboard/farmacia/stock',
+          module: 'pharmacy',
+        },
       ],
     },
     {
       title: 'Administración',
+      module: 'users',
       items: [
-        { label: 'Usuarios', href: '/dashboard/users' },
-        { label: 'Proveedores', href: '/dashboard/providers' },
-        { label: 'Reportes', href: '/dashboard/reportes' },
+        { label: 'Usuarios', href: '/dashboard/users', module: 'users' },
+        { label: 'Proveedores', href: '/dashboard/providers', module: 'providers' },
       ],
     },
   ];
+
+  // Filtrar módulos y sus items según permisos
+  const modules = allModules
+    .map((mod) => ({
+      ...mod,
+      items: mod.items.filter((item) => can(item.module, item.action || 'view')),
+    }))
+    .filter((mod) => mod.items.length > 0);
 
   return (
     <div className="space-y-8">
@@ -117,82 +181,87 @@ export default async function DashboardPage() {
             Bienvenido al Sistema de Inventario - La Gracia
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button asChild>
-            <Link href="/dashboard/farmacia/despachos">
-              <FlaskConical className="h-4 w-4 mr-2" />
-              Ir a Dispensación
-            </Link>
-          </Button>
+        {can('pharmacy') && (
+          <div className="flex gap-2">
+            <Button asChild>
+              <Link href="/dashboard/farmacia/despachos">
+                <FlaskConical className="h-4 w-4 mr-2" />
+                Ir a Dispensación
+              </Link>
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Estadísticas rápidas - solo si puede ver productos */}
+      {canViewProducts && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <Package className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{totalProducts}</p>
+                  <p className="text-xs text-muted-foreground">Productos</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                  <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">
+                    {totalProducts - lowStockProducts - outOfStockProducts}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Stock OK</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className={lowStockProducts > 0 ? 'border-yellow-300 dark:border-yellow-700' : ''}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+                  <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{lowStockProducts}</p>
+                  <p className="text-xs text-muted-foreground">Stock Bajo</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className={outOfStockProducts > 0 ? 'border-red-300 dark:border-red-700' : ''}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                  <Clock className="h-5 w-5 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{outOfStockProducts}</p>
+                  <p className="text-xs text-muted-foreground">Sin Stock</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </div>
+      )}
 
-      {/* Estadísticas rápidas */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <Package className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{totalProducts}</p>
-                <p className="text-xs text-muted-foreground">Productos</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">
-                  {totalProducts - lowStockProducts - outOfStockProducts}
-                </p>
-                <p className="text-xs text-muted-foreground">Stock OK</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className={lowStockProducts > 0 ? 'border-yellow-300 dark:border-yellow-700' : ''}>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-                <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{lowStockProducts}</p>
-                <p className="text-xs text-muted-foreground">Stock Bajo</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className={outOfStockProducts > 0 ? 'border-red-300 dark:border-red-700' : ''}>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                <Clock className="h-5 w-5 text-red-600 dark:text-red-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{outOfStockProducts}</p>
-                <p className="text-xs text-muted-foreground">Sin Stock</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Acciones Rápidas */}
-      <div>
-        <h2 className="text-lg font-semibold mb-4">Acciones Rápidas</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {quickActions.map((action) => (
+      {/* Acciones Rápidas - solo si hay acciones disponibles */}
+      {quickActions.length > 0 && (
+        <div>
+          <h2 className="text-lg font-semibold mb-4">Acciones Rápidas</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {quickActions.map((action) => (
             <Link key={action.href} href={action.href}>
               <Card
                 className={`h-full transition-all hover:shadow-md hover:-translate-y-1 cursor-pointer ${
@@ -217,50 +286,53 @@ export default async function DashboardPage() {
                 </CardContent>
               </Card>
             </Link>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Módulos del Sistema */}
-      <div>
-        <h2 className="text-lg font-semibold mb-4">Módulos del Sistema</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {modules.map((module) => (
-            <Card key={module.title}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <FolderOpen className="h-4 w-4" />
-                  {module.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {module.items.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center justify-between p-2 rounded-lg transition-colors hover:bg-muted ${
-                      item.highlight ? 'bg-primary/5' : ''
-                    }`}
-                  >
-                    <span className="text-sm">{item.label}</span>
-                    <div className="flex items-center gap-2">
-                      {item.count !== undefined && (
-                        <Badge variant="secondary" className="text-xs">
-                          {item.count}
-                        </Badge>
-                      )}
-                      {item.highlight && (
-                        <Badge className="text-xs">Nuevo</Badge>
-                      )}
-                      <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                    </div>
-                  </Link>
-                ))}
-              </CardContent>
-            </Card>
-          ))}
+      {/* Módulos del Sistema - solo si hay módulos disponibles */}
+      {modules.length > 0 && (
+        <div>
+          <h2 className="text-lg font-semibold mb-4">Módulos del Sistema</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {modules.map((module) => (
+              <Card key={module.title}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <FolderOpen className="h-4 w-4" />
+                    {module.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {module.items.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`flex items-center justify-between p-2 rounded-lg transition-colors hover:bg-muted ${
+                        item.highlight ? 'bg-primary/5' : ''
+                      }`}
+                    >
+                      <span className="text-sm">{item.label}</span>
+                      <div className="flex items-center gap-2">
+                        {item.count !== undefined && (
+                          <Badge variant="secondary" className="text-xs">
+                            {item.count}
+                          </Badge>
+                        )}
+                        {item.highlight && (
+                          <Badge className="text-xs">Nuevo</Badge>
+                        )}
+                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                      </div>
+                    </Link>
+                  ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Info del usuario */}
       <Card>

@@ -132,7 +132,7 @@ export const Navbar = (props: NavbarProps) => {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
+          {/* <button
             onClick={toggleTheme}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
             title="Cambiar tema"
@@ -142,17 +142,17 @@ export const Navbar = (props: NavbarProps) => {
             ) : (
               <Moon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
             )}
-          </button>
+          </button> */}
 
-          <button
+         {/*  <button
             className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
             title="Mensajes"
           >
             <Mail className="w-5 h-5 text-gray-700 dark:text-gray-300" />
             <span className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full"></span>
-          </button>
+          </button> */}
 
-          <div className="relative">
+         {/*  <div className="relative">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
               className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
@@ -233,7 +233,7 @@ export const Navbar = (props: NavbarProps) => {
                 </div>
               </>
             )}
-          </div>
+          </div> */}
 
           <div className="relative">
             <button

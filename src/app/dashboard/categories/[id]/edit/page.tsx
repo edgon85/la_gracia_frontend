@@ -1,6 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { CategoryForm } from '@/components/categories/CategoryForm';
 import { getCategoryByIdAction } from '@/actions/category.actions';
+import { getValidatedUserWithPermission } from '@/actions/auth.actions';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,9 @@ interface EditCategoryPageProps {
 }
 
 export default async function EditCategoryPage({ params }: EditCategoryPageProps) {
+  // Verificar permisos: solo usuarios con permiso 'edit' en categories
+  await getValidatedUserWithPermission('categories', 'edit');
+
   const { id } = await params;
   const response = await getCategoryByIdAction(id);
 

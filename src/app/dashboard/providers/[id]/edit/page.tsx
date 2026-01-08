@@ -1,6 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { ProviderForm } from '@/components/providers/ProviderForm';
 import { getProviderByIdAction } from '@/actions/provider.actions';
+import { getValidatedUserWithPermission } from '@/actions/auth.actions';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,9 @@ interface EditProviderPageProps {
 }
 
 export default async function EditProviderPage({ params }: EditProviderPageProps) {
+  // Verificar permisos: solo usuarios con permiso 'edit' en providers
+  await getValidatedUserWithPermission('providers', 'edit');
+
   const { id } = await params;
   const response = await getProviderByIdAction(id);
 

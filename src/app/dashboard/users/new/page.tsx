@@ -1,24 +1,12 @@
-import { Card } from '@/components/ui/card';
 import { UserForm } from '@/components/users';
-import { getValidatedUser } from '@/actions/auth.actions';
-import { redirect } from 'next/navigation';
+import { getValidatedUserWithPermission } from '@/actions/auth.actions';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
 export default async function NewUserPage() {
-  const user = await getValidatedUser();
-
-  if (!user) {
-    redirect('/login');
-  }
-
-  // Solo administradores pueden crear usuarios
-  const isAdmin = user.roles.includes('admin');
-
-  if (!isAdmin) {
-    redirect('/dashboard/users');
-  }
+  // Verificar permisos: solo usuarios con permiso 'create' en users
+  await getValidatedUserWithPermission('users', 'create');
 
   return (
     <div className="space-y-6">

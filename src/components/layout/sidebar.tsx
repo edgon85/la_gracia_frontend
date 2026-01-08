@@ -1,29 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Home,
   Package,
-  ArrowLeftRight,
   FlaskConical,
-  FileText,
   Truck,
-  ShoppingCart,
   Users,
-  BarChart3,
-  BellRing,
   ChevronDown,
   ChevronRight,
-  X
+  X,
 } from 'lucide-react';
 import { LogoutButton } from '../buttons';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Module } from '@/lib/permissions';
 
 interface SubMenuItem {
   label: string;
   href: string;
   badge?: number;
+  module?: Module; // Módulo requerido para ver este subitem
 }
 
 interface MenuItem {
@@ -32,6 +30,7 @@ interface MenuItem {
   href?: string;
   badge?: number;
   subItems?: SubMenuItem[];
+  module?: Module; // Módulo requerido para ver este item
 }
 
 interface SidebarProps {
@@ -41,24 +40,31 @@ interface SidebarProps {
 
 const menuItems: MenuItem[] = [
   {
-    label: 'Dashboard',
+    label: 'Inicio',
     icon: Home,
     href: '/dashboard',
+    module: 'dashboard',
   },
   {
     label: 'Catalogo',
     icon: Package,
+    module: 'products',
     subItems: [
-      { label: 'Productos', href: '/dashboard/products' },
-      { label: 'Categorías', href: '/dashboard/categories' },
+      { label: 'Productos', href: '/dashboard/products', module: 'products' },
+      {
+        label: 'Categorías',
+        href: '/dashboard/categories',
+        module: 'categories',
+      },
       {
         label: 'Próximos a vencer',
         href: '/dashboard/productos/vencimiento',
         badge: 12,
+        module: 'products',
       },
     ],
   },
-  {
+  /* {
     label: 'Inventario',
     icon: ArrowLeftRight,
     subItems: [
@@ -66,17 +72,22 @@ const menuItems: MenuItem[] = [
       { label: 'Ajustes', href: '/dashboard/inventario/ajustes' },
       { label: 'Transferencias', href: '/dashboard/inventario/transferencias' },
     ],
-  },
+  }, */
   {
     label: 'Farmacia',
     icon: FlaskConical,
+    module: 'pharmacy',
     subItems: [
-      { label: 'Despachos', href: '/dashboard/farmacia/despachos' },
-      { label: 'Recetas', href: '/dashboard/farmacia/recetas', badge: 5 },
-      { label: 'Stock', href: '/dashboard/farmacia/stock' },
+      {
+        label: 'Despachos',
+        href: '/dashboard/farmacia/despachos',
+        module: 'pharmacy',
+      },
+      // { label: 'Recetas', href: '/dashboard/farmacia/recetas', badge: 5 },
+      { label: 'Stock', href: '/dashboard/farmacia/stock', module: 'pharmacy' },
     ],
   },
-  {
+  /* {
     label: 'Solicitudes',
     icon: FileText,
     badge: 8,
@@ -89,39 +100,68 @@ const menuItems: MenuItem[] = [
       { label: 'Aprobadas', href: '/dashboard/solicitudes/aprobadas' },
       { label: 'Historial', href: '/dashboard/solicitudes/historial' },
     ],
-  },
+  }, */
   {
     label: 'Proveedores',
     icon: Truck,
     href: '/dashboard/providers',
+    module: 'providers',
   },
-  {
+  /*   {
     label: 'Compras',
     icon: ShoppingCart,
     href: '/dashboard/compras',
-  },
+  }, */
   {
     label: 'Usuarios',
     icon: Users,
     href: '/dashboard/users',
+    module: 'users',
   },
-  {
+  /* {
     label: 'Reportes',
     icon: BarChart3,
     href: '/dashboard/reportes',
-  },
-  {
+  }, */
+  /* {
     label: 'Alertas',
     icon: BellRing,
     href: '/dashboard/alertas',
     badge: 3,
-  },
+  }, */
 ];
 
 export const Sidebar = (props: SidebarProps) => {
   const { isOpen, onClose } = props;
   const pathname = usePathname();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const { canView } = usePermissions();
+
+  // Filtrar elementos del menú según permisos
+  const filteredMenuItems = useMemo(() => {
+    return (
+      menuItems
+        .filter((item) => {
+          // Si no tiene módulo definido, mostrar siempre
+          if (!item.module) return true;
+          // Verificar si el usuario puede ver el módulo
+          return canView(item.module);
+        })
+        .map((item) => {
+          // Filtrar subitems también
+          if (item.subItems) {
+            const filteredSubItems = item.subItems.filter((subItem) => {
+              if (!subItem.module) return true;
+              return canView(subItem.module);
+            });
+            return { ...item, subItems: filteredSubItems };
+          }
+          return item;
+        })
+        // Remover items con subItems vacíos
+        .filter((item) => !item.subItems || item.subItems.length > 0)
+    );
+  }, [canView]);
 
   const toggleExpand = (label: string) => {
     setExpandedItems((prev) =>
@@ -183,7 +223,7 @@ export const Sidebar = (props: SidebarProps) => {
           </div>
 
           <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-            {menuItems.map((item) => {
+            {filteredMenuItems.map((item) => {
               const Icon = item.icon;
               const hasSubItems = item.subItems && item.subItems.length > 0;
               const isExpanded = expandedItems.includes(item.label);

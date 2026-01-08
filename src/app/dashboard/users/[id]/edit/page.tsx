@@ -1,8 +1,7 @@
-import { Card } from '@/components/ui/card';
 import { UserForm } from '@/components/users';
 import { getUserByIdAction } from '@/actions/user.actions';
-import { getValidatedUser } from '@/actions/auth.actions';
-import { redirect, notFound } from 'next/navigation';
+import { getValidatedUserWithPermission } from '@/actions/auth.actions';
+import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -12,18 +11,8 @@ interface EditUserPageProps {
 }
 
 export default async function EditUserPage({ params }: EditUserPageProps) {
-  const currentUser = await getValidatedUser();
-
-  if (!currentUser) {
-    redirect('/login');
-  }
-
-  // Solo administradores pueden editar usuarios
-  const isAdmin = currentUser.roles.includes('admin');
-
-  if (!isAdmin) {
-    redirect('/dashboard/users');
-  }
+  // Verificar permisos: solo usuarios con permiso 'edit' en users
+  await getValidatedUserWithPermission('users', 'edit');
 
   const { id } = await params;
   const response = await getUserByIdAction(id);

@@ -1,21 +1,19 @@
 import { UsersPage } from '@/components/users';
 import { getUsersAction } from '@/actions/user.actions';
-import { getValidatedUser } from '@/actions/auth.actions';
-import { redirect } from 'next/navigation';
+import { getValidatedUserWithPermission } from '@/actions/auth.actions';
+import { hasPermission } from '@/lib/permissions';
 
 export default async function UsersListPage() {
-  const user = await getValidatedUser();
+  // Verificar permisos: solo usuarios con acceso a 'users' pueden ver
+  const user = await getValidatedUserWithPermission('users', 'view');
 
-  if (!user) {
-    redirect('/login');
-  }
-
-  const isAdmin = user.roles.includes('admin');
+  // Verificar si puede crear/editar usuarios
+  const canManageUsers = hasPermission(user.roles, 'users', 'create');
 
   const response = await getUsersAction();
 
   // Si hay error, mostramos lista vacía
   const initialUsers = 'error' in response ? [] : response.data;
 
-  return <UsersPage initialUsers={initialUsers} isAdmin={isAdmin} />;
+  return <UsersPage initialUsers={initialUsers} isAdmin={canManageUsers} />;
 }

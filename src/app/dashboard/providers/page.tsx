@@ -1,7 +1,10 @@
 import { getProvidersAction } from '@/actions/provider.actions';
+import { getValidatedUserWithPermission } from '@/actions/auth.actions';
 import { ProvidersPage } from '@/components/providers/ProvidersPage';
 
 export default async function ProviderPage() {
+  // Verificar permisos: solo usuarios con acceso a 'providers' pueden ver
+  await getValidatedUserWithPermission('providers', 'view');
   // Fetch initial data from server
   const initialFilters = {
     page: 1,
