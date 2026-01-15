@@ -29,19 +29,26 @@ export async function getProductsAction(
     const params = new URLSearchParams();
 
     if (filters.search) params.append('search', filters.search);
-    if (filters.minPrice !== undefined) params.append('minPrice', filters.minPrice.toString());
-    if (filters.maxPrice !== undefined) params.append('maxPrice', filters.maxPrice.toString());
-    if (filters.isActive !== undefined) params.append('isActive', filters.isActive.toString());
+    if (filters.minPrice !== undefined)
+      params.append('minPrice', filters.minPrice.toString());
+    if (filters.maxPrice !== undefined)
+      params.append('maxPrice', filters.maxPrice.toString());
+    if (filters.isActive !== undefined)
+      params.append('isActive', filters.isActive.toString());
     if (filters.page) params.append('page', filters.page.toString());
     if (filters.limit) params.append('limit', filters.limit.toString());
     if (filters.sortBy) params.append('sortBy', filters.sortBy);
     // Nuevos filtros de stock y vencimiento
     if (filters.stockStatus) params.append('stockStatus', filters.stockStatus);
-    if (filters.expiringInDays !== undefined) params.append('expiringInDays', filters.expiringInDays.toString());
+    if (filters.expiringInDays !== undefined)
+      params.append('expiringInDays', filters.expiringInDays.toString());
+    // Filtro por ubicación
+    if (filters.location) params.append('location', filters.location);
 
     const queryString = params.toString();
     const url = `${API_URL}/products${queryString ? `?${queryString}` : ''}`;
 
+    console.log('Fetching products with URL:', url);
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -50,7 +57,7 @@ export async function getProductsAction(
       },
       cache: 'no-store',
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       return {
@@ -58,7 +65,6 @@ export async function getProductsAction(
       };
     }
 
-    
     const data: IProductsResponse = await response.json();
     return data;
   } catch (error) {
@@ -333,10 +339,11 @@ export async function getProductStatsAction(): Promise<
 
 /**
  * Obtiene lotes próximos a vencer
- * GET /products/batches/expiring?days=30
+ * GET /products/batches/expiring?days=30&location=farmacia
  */
 export async function getExpiringBatchesAction(
-  days: number = 30
+  days: number = 30,
+  location?: 'FARMACIA' | 'BODEGA'
 ): Promise<IExpiringBatch[] | { error: string }> {
   try {
     const token = await getToken();
@@ -345,8 +352,12 @@ export async function getExpiringBatchesAction(
       return { error: 'No autenticado' };
     }
 
+    const params = new URLSearchParams();
+    params.append('days', days.toString());
+    if (location) params.append('location', location);
+
     const response = await fetch(
-      `${API_URL}/products/batches/expiring?days=${days}`,
+      `${API_URL}/products/batches/expiring?${params.toString()}`,
       {
         method: 'GET',
         headers: {

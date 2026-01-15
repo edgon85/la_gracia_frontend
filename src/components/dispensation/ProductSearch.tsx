@@ -11,7 +11,16 @@ import { IProduct } from '@/lib';
 import { useDispensationStore } from '@/stores';
 import { useDebounce } from '@/hooks/useDebounce';
 
-export function ProductSearch() {
+interface ProductSearchProps {
+  location?: 'farmacia' | 'bodega';
+}
+
+// Convertir location a mayúsculas para el backend
+const toBackendLocation = (loc: 'farmacia' | 'bodega'): 'FARMACIA' | 'BODEGA' => {
+  return loc.toUpperCase() as 'FARMACIA' | 'BODEGA';
+};
+
+export function ProductSearch({ location }: ProductSearchProps) {
   const [search, setSearch] = useState('');
   const [results, setResults] = useState<IProduct[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -34,6 +43,7 @@ export function ProductSearch() {
         search: debouncedSearch,
         limit: 10,
         isActive: true,
+        ...(location && { location: toBackendLocation(location) }),
       });
 
       if ('error' in response) {

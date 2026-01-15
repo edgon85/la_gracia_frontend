@@ -69,6 +69,8 @@ export async function getMovementsAction(
     if (filters.endDate) params.append('endDate', filters.endDate);
     if (filters.page) params.append('page', filters.page.toString());
     if (filters.limit) params.append('limit', filters.limit.toString());
+    if (filters.location) params.append('location', filters.location);
+    if (filters.category) params.append('category', filters.category);
 
     const queryString = params.toString();
     const url = `${API_URL}/inventory-movements${queryString ? `?${queryString}` : ''}`;

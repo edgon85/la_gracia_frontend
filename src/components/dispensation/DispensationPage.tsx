@@ -9,15 +9,27 @@ import { DispensationCart } from './DispensationCart';
 import { useDispensationStore } from '@/stores';
 import {
   FlaskConical,
+  Warehouse,
   Package,
   History,
   Keyboard,
   ArrowRight,
 } from 'lucide-react';
 
-export function DispensationPage() {
+interface DispensationPageProps {
+  location?: 'farmacia' | 'bodega';
+}
+
+export function DispensationPage({ location = 'farmacia' }: DispensationPageProps) {
   const router = useRouter();
   const { getTotalItems } = useDispensationStore();
+
+  const isFarmacia = location === 'farmacia';
+  const LocationIcon = isFarmacia ? FlaskConical : Warehouse;
+  const title = isFarmacia ? 'Dispensación - Farmacia' : 'Dispensación - Bodega';
+  const description = isFarmacia
+    ? 'Registra la salida de productos de farmacia'
+    : 'Registra la salida de productos de bodega';
 
   return (
     <div className="space-y-6">
@@ -26,12 +38,12 @@ export function DispensationPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg">
-              <FlaskConical className="h-7 w-7 text-primary" />
+              <LocationIcon className="h-7 w-7 text-primary" />
             </div>
-            Dispensación
+            {title}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Registra la salida de productos del inventario
+            {description}
           </p>
         </div>
         <div className="flex gap-2">
@@ -95,7 +107,7 @@ export function DispensationPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4">
-              <ProductSearch />
+              <ProductSearch location={location} />
               <div className="mt-4 p-3 bg-muted/50 rounded-lg">
                 <p className="text-sm text-muted-foreground flex items-center gap-2">
                   <ArrowRight className="h-4 w-4" />

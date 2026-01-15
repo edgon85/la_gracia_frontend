@@ -33,6 +33,7 @@ export interface IBatch {
   purchasePrice: string;
   salePrice: string;
   status: 'ACTIVE' | 'EXPIRED' | 'DEPLETED';
+  location: 'FARMACIA' | 'BODEGA';
   notes: string | null;
   isActive: boolean;
   productId: string;
@@ -88,6 +89,8 @@ export interface IProductFilters {
   // Nuevos filtros de stock y vencimiento
   stockStatus?: 'low' | 'out' | 'ok';
   expiringInDays?: number;
+  // Filtro por ubicación
+  location?: 'FARMACIA' | 'BODEGA';
 }
 
 // Estadísticas de productos
@@ -114,6 +117,7 @@ export interface IExpiringBatch {
   expiryDate: string;
   quantity: number;
   status: 'ACTIVE' | 'EXPIRED' | 'DEPLETED' | 'NEAR_EXPIRY';
+  location: 'FARMACIA' | 'BODEGA';
   product: {
     id: string;
     commercialName: string;
@@ -205,6 +209,7 @@ export interface ICreateBatchRequest {
   quantity: number;
   purchasePrice: number;
   salePrice: number;
+  location?: 'FARMACIA' | 'BODEGA';
   notes?: string;
 }
 

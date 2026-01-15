@@ -1,10 +1,11 @@
 export enum Role {
   ADMIN = 'admin',
-  FARMACIA = 'FARMACIA',
-  BODEGA = 'BODEGA',
-  MEDICO = 'MEDICO',
-  ENFERMERO = 'ENFERMERO',
-  AUDITOR = 'AUDITOR',
+  PHARMACY = 'pharmacy',
+  WAREHOUSE = 'warehouse',
+  DOCTOR = 'doctor',
+  NURSE = 'nurse',
+  AUDITOR = 'auditor',
+  USER = 'user',
 }
 
 export interface IUser {

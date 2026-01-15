@@ -1,9 +1,8 @@
 import { DispensationPage } from '@/components/dispensation';
 import { getValidatedUserWithPermission } from '@/actions/auth.actions';
 
-export default async function DespachosPage() {
-  // Verificar permisos: solo usuarios con acceso a 'pharmacy' pueden ver
+export default async function FarmaciaDespachosPage() {
   await getValidatedUserWithPermission('pharmacy', 'view');
 
-  return <DispensationPage />;
+  return <DispensationPage location="farmacia" />;
 }

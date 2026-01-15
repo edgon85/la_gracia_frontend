@@ -1,6 +1,7 @@
 // Sistema de permisos por rol
 // Fase 1: Permisos básicos para gestión de inventario y usuarios
 
+// Los roles coinciden con ValidRoles del backend (todos en minúsculas)
 export type UserRole = 'admin' | 'user' | 'pharmacy' | 'warehouse' | 'doctor' | 'nurse' | 'auditor';
 
 // Módulos disponibles en la aplicación
@@ -11,6 +12,7 @@ export type Module =
   | 'categories'
   | 'providers'
   | 'pharmacy'
+  | 'warehouse'
   | 'users';
 
 // Acciones disponibles por módulo
@@ -22,6 +24,7 @@ export type ModulePermissions = {
 };
 
 // Definición de permisos por rol
+// Los nombres de los roles coinciden con los que vienen del backend (normalizados a minúsculas)
 export const ROLE_PERMISSIONS: Record<UserRole, ModulePermissions> = {
   // Admin: acceso total a todo
   admin: {
@@ -31,6 +34,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, ModulePermissions> = {
     categories: ['view', 'create', 'edit', 'delete'],
     providers: ['view', 'create', 'edit', 'delete'],
     pharmacy: ['view', 'create', 'edit', 'delete'],
+    warehouse: ['view', 'create', 'edit', 'delete'],
     users: ['view', 'create', 'edit', 'delete'],
   },
 
@@ -42,40 +46,43 @@ export const ROLE_PERMISSIONS: Record<UserRole, ModulePermissions> = {
     categories: ['view'],
     providers: ['view'],
     pharmacy: ['view'],
+    warehouse: ['view'],
     users: ['view'],
   },
 
-  // Warehouse (Bodega): gestión de inventario completa
+  // Warehouse: gestión de inventario de bodega
   warehouse: {
     dashboard: ['view'],
     profile: ['view', 'edit'],
     products: ['view', 'create', 'edit', 'delete'],
     categories: ['view', 'create', 'edit', 'delete'],
     providers: ['view', 'create', 'edit', 'delete'],
-    pharmacy: ['view'], // Solo ver stock de farmacia
+    warehouse: ['view', 'create', 'edit', 'delete'],
+    pharmacy: ['view'],
   },
 
-  // Pharmacy (Farmacia): gestión de despachos y ver productos
+  // Pharmacy: gestión de despachos de farmacia
   pharmacy: {
     dashboard: ['view'],
     profile: ['view', 'edit'],
-    products: ['view'], // Solo ver productos
+    products: ['view'],
     categories: ['view'],
-    pharmacy: ['view', 'create', 'edit'], // Despachos
+    pharmacy: ['view', 'create', 'edit'],
+    warehouse: ['view'],
   },
 
   // Doctor: ver farmacia (fase 2: solicitar medicamentos)
   doctor: {
     dashboard: ['view'],
     profile: ['view', 'edit'],
-    pharmacy: ['view'], // Fase 2: agregar 'create' para solicitudes
+    pharmacy: ['view'],
   },
 
-  // Nurse (Enfermero): acceso básico (fase 2: ver pacientes)
+  // Nurse: acceso básico (fase 2: ver pacientes)
   nurse: {
     dashboard: ['view'],
     profile: ['view', 'edit'],
-    pharmacy: ['view'], // Ver disponibilidad de medicamentos
+    pharmacy: ['view'],
   },
 
   // User: acceso mínimo
@@ -95,9 +102,17 @@ export const ROUTE_TO_MODULE: Record<string, Module> = {
   '/dashboard/categories/new': 'categories',
   '/dashboard/providers': 'providers',
   '/dashboard/providers/new': 'providers',
-  '/dashboard/farmacia': 'pharmacy',
-  '/dashboard/farmacia/despachos': 'pharmacy',
-  '/dashboard/farmacia/stock': 'pharmacy',
+  // Pharmacy
+  '/dashboard/pharmacy': 'pharmacy',
+  '/dashboard/pharmacy/products': 'pharmacy',
+  '/dashboard/pharmacy/dispensations': 'pharmacy',
+  '/dashboard/pharmacy/expiring': 'pharmacy',
+  // Warehouse
+  '/dashboard/warehouse': 'warehouse',
+  '/dashboard/warehouse/products': 'warehouse',
+  '/dashboard/warehouse/dispensations': 'warehouse',
+  '/dashboard/warehouse/expiring': 'warehouse',
+  // Users
   '/dashboard/users': 'users',
   '/dashboard/users/new': 'users',
 };
@@ -112,9 +127,17 @@ export const ROUTE_TO_ACTION: Record<string, Action> = {
   '/dashboard/categories/new': 'create',
   '/dashboard/providers': 'view',
   '/dashboard/providers/new': 'create',
-  '/dashboard/farmacia': 'view',
-  '/dashboard/farmacia/despachos': 'view',
-  '/dashboard/farmacia/stock': 'view',
+  // Pharmacy
+  '/dashboard/pharmacy': 'view',
+  '/dashboard/pharmacy/products': 'view',
+  '/dashboard/pharmacy/dispensations': 'view',
+  '/dashboard/pharmacy/expiring': 'view',
+  // Warehouse
+  '/dashboard/warehouse': 'view',
+  '/dashboard/warehouse/products': 'view',
+  '/dashboard/warehouse/dispensations': 'view',
+  '/dashboard/warehouse/expiring': 'view',
+  // Users
   '/dashboard/users': 'view',
   '/dashboard/users/new': 'create',
 };

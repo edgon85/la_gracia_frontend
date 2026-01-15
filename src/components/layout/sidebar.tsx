@@ -7,11 +7,13 @@ import {
   Home,
   Package,
   FlaskConical,
+  Warehouse,
   Truck,
   Users,
   ChevronDown,
   ChevronRight,
   X,
+  Tags,
 } from 'lucide-react';
 import { LogoutButton } from '../buttons';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -46,89 +48,67 @@ const menuItems: MenuItem[] = [
     module: 'dashboard',
   },
   {
-    label: 'Catalogo',
-    icon: Package,
-    module: 'products',
-    subItems: [
-      { label: 'Productos', href: '/dashboard/products', module: 'products' },
-      {
-        label: 'Categorías',
-        href: '/dashboard/categories',
-        module: 'categories',
-      },
-      {
-        label: 'Próximos a vencer',
-        href: '/dashboard/productos/vencimiento',
-        badge: 12,
-        module: 'products',
-      },
-    ],
-  },
-  /* {
-    label: 'Inventario',
-    icon: ArrowLeftRight,
-    subItems: [
-      { label: 'Movimientos', href: '/dashboard/inventario/movimientos' },
-      { label: 'Ajustes', href: '/dashboard/inventario/ajustes' },
-      { label: 'Transferencias', href: '/dashboard/inventario/transferencias' },
-    ],
-  }, */
-  {
     label: 'Farmacia',
     icon: FlaskConical,
     module: 'pharmacy',
     subItems: [
       {
-        label: 'Despachos',
-        href: '/dashboard/farmacia/despachos',
+        label: 'Productos',
+        href: '/dashboard/pharmacy/products',
         module: 'pharmacy',
       },
-      // { label: 'Recetas', href: '/dashboard/farmacia/recetas', badge: 5 },
-      { label: 'Stock', href: '/dashboard/farmacia/stock', module: 'pharmacy' },
+      {
+        label: 'Despachos',
+        href: '/dashboard/pharmacy/dispensations',
+        module: 'pharmacy',
+      },
+      {
+        label: 'Próximos a vencer',
+        href: '/dashboard/pharmacy/expiring',
+        module: 'pharmacy',
+      },
     ],
   },
-  /* {
-    label: 'Solicitudes',
-    icon: FileText,
-    badge: 8,
+  {
+    label: 'Bodega',
+    icon: Warehouse,
+    module: 'warehouse',
     subItems: [
       {
-        label: 'Pendientes',
-        href: '/dashboard/solicitudes/pendientes',
-        badge: 8,
+        label: 'Productos',
+        href: '/dashboard/warehouse/products',
+        module: 'warehouse',
       },
-      { label: 'Aprobadas', href: '/dashboard/solicitudes/aprobadas' },
-      { label: 'Historial', href: '/dashboard/solicitudes/historial' },
+      {
+        label: 'Despachos',
+        href: '/dashboard/warehouse/dispensations',
+        module: 'warehouse',
+      },
+      {
+        label: 'Próximos a vencer',
+        href: '/dashboard/warehouse/expiring',
+        module: 'warehouse',
+      },
     ],
-  }, */
+  },
+  {
+    label: 'Categorías',
+    icon: Tags,
+    href: '/dashboard/categories',
+    module: 'categories',
+  },
   {
     label: 'Proveedores',
     icon: Truck,
     href: '/dashboard/providers',
     module: 'providers',
   },
-  /*   {
-    label: 'Compras',
-    icon: ShoppingCart,
-    href: '/dashboard/compras',
-  }, */
   {
     label: 'Usuarios',
     icon: Users,
     href: '/dashboard/users',
     module: 'users',
   },
-  /* {
-    label: 'Reportes',
-    icon: BarChart3,
-    href: '/dashboard/reportes',
-  }, */
-  /* {
-    label: 'Alertas',
-    icon: BellRing,
-    href: '/dashboard/alertas',
-    badge: 3,
-  }, */
 ];
 
 export const Sidebar = (props: SidebarProps) => {

@@ -9,13 +9,28 @@ import { Pagination } from '@/components/products/Pagination';
 import { CreateProductButton } from '@/components/products/CreateProductButton';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, FlaskConical, Warehouse } from 'lucide-react';
 
 interface ProductsPageProps {
   initialData: IProductsResponse;
+  location?: 'farmacia' | 'bodega';
+  title?: string;
+  description?: string;
+  showCreateButton?: boolean;
 }
 
-export function ProductsPage({ initialData }: ProductsPageProps) {
+// Convertir location a mayúsculas para el backend
+const toBackendLocation = (loc: 'farmacia' | 'bodega'): 'FARMACIA' | 'BODEGA' => {
+  return loc.toUpperCase() as 'FARMACIA' | 'BODEGA';
+};
+
+export function ProductsPage({
+  initialData,
+  location,
+  title = 'Catálogo de Productos',
+  description = 'Administra y consulta el inventario de productos del hospital',
+  showCreateButton = true,
+}: ProductsPageProps) {
   const [products, setProducts] = useState<IProduct[]>(initialData.data);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(initialData.meta.page);
@@ -25,7 +40,7 @@ export function ProductsPage({ initialData }: ProductsPageProps) {
   const [sortField, setSortField] = useState<string>('commercialName');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [filters, setFilters] = useState<
-    Omit<IProductFilters, 'page' | 'limit' | 'sortBy'>
+    Omit<IProductFilters, 'page' | 'limit' | 'sortBy' | 'location'>
   >({});
 
   const fetchProducts = async () => {
@@ -36,6 +51,7 @@ export function ProductsPage({ initialData }: ProductsPageProps) {
         page: currentPage,
         limit: itemsPerPage,
         sortBy: sortField,
+        ...(location && { location: toBackendLocation(location) }),
       };
 
       const response = await getProductsAction(productFilters);
@@ -101,19 +117,26 @@ export function ProductsPage({ initialData }: ProductsPageProps) {
     setCurrentPage(1); // Reset to first page when changing items per page
   };
 
+  const LocationIcon = location === 'farmacia' ? FlaskConical : location === 'bodega' ? Warehouse : null;
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Catálogo de Productos
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+            {LocationIcon && (
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <LocationIcon className="h-7 w-7 text-primary" />
+              </div>
+            )}
+            {title}
           </h1>
           <p className="text-muted-foreground">
-            Administra y consulta el inventario de productos del hospital
+            {description}
           </p>
         </div>
-        <CreateProductButton />
+        {showCreateButton && <CreateProductButton />}
       </div>
 
       {/* Filters */}

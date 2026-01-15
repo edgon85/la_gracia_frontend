@@ -56,6 +56,7 @@ export interface ICreateExitRequest {
   reference?: string;
   patientName?: string;
   patientId?: string;
+  location?: 'FARMACIA' | 'BODEGA';
 }
 
 export interface ICreateExitResponse {
@@ -81,6 +82,8 @@ export interface IMovementFilters {
   endDate?: string;
   page?: number;
   limit?: number;
+  location?: 'FARMACIA' | 'BODEGA';
+  category?: 'ENTRY' | 'EXIT';
 }
 
 export interface IMovementsResponse {

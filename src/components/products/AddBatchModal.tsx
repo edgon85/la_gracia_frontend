@@ -11,6 +11,13 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,6 +44,9 @@ const addBatchSchema = z.object({
     .min(1, 'El precio de venta es requerido')
     .transform((val) => Number(val))
     .refine((val) => val >= 0, 'El precio de venta debe ser mayor o igual a 0'),
+  location: z.enum(['farmacia', 'bodega'], {
+    message: 'La ubicación es requerida',
+  }),
   notes: z.string().optional(),
 });
 
@@ -65,6 +75,8 @@ export function AddBatchModal({
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<AddBatchFormInput, unknown, AddBatchFormData>({
     resolver: zodResolver(addBatchSchema),
@@ -75,15 +87,24 @@ export function AddBatchModal({
       quantity: '',
       purchasePrice: '',
       salePrice: '',
+      location: 'bodega',
       notes: '',
     },
   });
+
+  const selectedLocation = watch('location');
 
   const onSubmit = async (data: AddBatchFormData) => {
     setIsLoading(true);
     setError(null);
 
-    const result = await addBatchToProductAction(productId, data);
+    // Convertir location a mayúsculas para el backend
+    const backendData = {
+      ...data,
+      location: data.location.toUpperCase() as 'FARMACIA' | 'BODEGA',
+    };
+
+    const result = await addBatchToProductAction(productId, backendData);
 
     if ('error' in result) {
       setError(result.error);
@@ -158,18 +179,41 @@ export function AddBatchModal({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="quantity">Cantidad *</Label>
-            <Input
-              id="quantity"
-              type="number"
-              min="1"
-              placeholder="500"
-              {...register('quantity')}
-            />
-            {errors.quantity && (
-              <p className="text-sm text-destructive">{errors.quantity.message}</p>
-            )}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="quantity">Cantidad *</Label>
+              <Input
+                id="quantity"
+                type="number"
+                min="1"
+                placeholder="500"
+                {...register('quantity')}
+              />
+              {errors.quantity && (
+                <p className="text-sm text-destructive">{errors.quantity.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="location">Ubicación *</Label>
+              <Select
+                value={selectedLocation}
+                onValueChange={(value: 'farmacia' | 'bodega') =>
+                  setValue('location', value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar ubicación" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bodega">Bodega</SelectItem>
+                  <SelectItem value="farmacia">Farmacia</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.location && (
+                <p className="text-sm text-destructive">{errors.location.message}</p>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
