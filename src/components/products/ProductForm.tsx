@@ -28,7 +28,7 @@ import { useAuthStore } from '@/stores/auth.store';
 const createProductSchema = z.object({
   internalCode: z.string().min(1, 'El código interno es requerido'),
   commercialName: z.string().min(1, 'El nombre comercial es requerido'),
-  genericName: z.string().min(1, 'El nombre genérico es requerido'),
+  genericName: z.string().min(1, 'El componente activo es requerido'),
   presentation: z.string().min(1, 'La presentación es requerida'),
   concentration: z.string().min(1, 'La concentración es requerida'),
   unitOfMeasure: z.string().min(1, 'La unidad de medida es requerida'),
@@ -50,7 +50,7 @@ const createProductSchema = z.object({
 const editProductSchema = z.object({
   internalCode: z.string().min(1, 'El código interno es requerido'),
   commercialName: z.string().min(1, 'El nombre comercial es requerido'),
-  genericName: z.string().min(1, 'El nombre genérico es requerido'),
+  genericName: z.string().min(1, 'El componente activo es requerido'),
   presentation: z.string().min(1, 'La presentación es requerida'),
   concentration: z.string().min(1, 'La concentración es requerida'),
   unitOfMeasure: z.string().min(1, 'La unidad de medida es requerida'),
@@ -369,7 +369,7 @@ export function ProductForm({ product, isEditing = false }: ProductFormProps) {
 
           <div className="col-span-2 space-y-2">
             <Label htmlFor="genericName">
-              Nombre Genérico <span className="text-destructive">*</span>
+              Componente Activo <span className="text-destructive">*</span>
             </Label>
             <Input
               id="genericName"

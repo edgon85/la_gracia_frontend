@@ -94,7 +94,7 @@ export function ProductsTable({
                 {getSortIcon('commercialName')}
               </Button>
             </TableHead>
-            <TableHead>Nombre Genérico</TableHead>
+            <TableHead>Componente Activo</TableHead>
             <TableHead>Presentación</TableHead>
             <TableHead>Categoría</TableHead>
             <TableHead>
