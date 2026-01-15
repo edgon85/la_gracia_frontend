@@ -1,6 +1,16 @@
 'use server';
 
-import { IProductsResponse, IProductFilters, ICreateProductRequest, IUpdateProductRequest, IProduct, ICreateBatchRequest, IBatch } from '@/lib';
+import {
+  IProductsResponse,
+  IProductFilters,
+  ICreateProductRequest,
+  IUpdateProductRequest,
+  IProduct,
+  ICreateBatchRequest,
+  IBatch,
+  IProductStats,
+  IExpiringBatch,
+} from '@/lib';
 import { getToken } from './auth.actions';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -25,6 +35,9 @@ export async function getProductsAction(
     if (filters.page) params.append('page', filters.page.toString());
     if (filters.limit) params.append('limit', filters.limit.toString());
     if (filters.sortBy) params.append('sortBy', filters.sortBy);
+    // Nuevos filtros de stock y vencimiento
+    if (filters.stockStatus) params.append('stockStatus', filters.stockStatus);
+    if (filters.expiringInDays !== undefined) params.append('expiringInDays', filters.expiringInDays.toString());
 
     const queryString = params.toString();
     const url = `${API_URL}/products${queryString ? `?${queryString}` : ''}`;
@@ -270,6 +283,91 @@ export async function addBatchToProductAction(
     return { success: true, batch };
   } catch (error) {
     console.error('Error adding batch:', error);
+    return {
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+// ==================== ESTADÍSTICAS ====================
+
+/**
+ * Obtiene estadísticas generales de productos
+ * GET /products/stats
+ */
+export async function getProductStatsAction(): Promise<
+  IProductStats | { error: string }
+> {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      return { error: 'No autenticado' };
+    }
+
+    const response = await fetch(`${API_URL}/products/stats`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return {
+        error: errorData.message || 'Error al obtener estadísticas',
+      };
+    }
+
+    const stats: IProductStats = await response.json();
+    return stats;
+  } catch (error) {
+    console.error('Error fetching product stats:', error);
+    return {
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+/**
+ * Obtiene lotes próximos a vencer
+ * GET /products/batches/expiring?days=30
+ */
+export async function getExpiringBatchesAction(
+  days: number = 30
+): Promise<IExpiringBatch[] | { error: string }> {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      return { error: 'No autenticado' };
+    }
+
+    const response = await fetch(
+      `${API_URL}/products/batches/expiring?days=${days}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        cache: 'no-store',
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return {
+        error: errorData.message || 'Error al obtener lotes por vencer',
+      };
+    }
+
+    const batches: IExpiringBatch[] = await response.json();
+    return batches;
+  } catch (error) {
+    console.error('Error fetching expiring batches:', error);
     return {
       error: error instanceof Error ? error.message : 'Error desconocido',
     };

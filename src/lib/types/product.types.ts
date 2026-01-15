@@ -85,6 +85,40 @@ export interface IProductFilters {
   page?: number;
   limit?: number;
   sortBy?: string;
+  // Nuevos filtros de stock y vencimiento
+  stockStatus?: 'low' | 'out' | 'ok';
+  expiringInDays?: number;
+}
+
+// Estadísticas de productos
+export interface IProductStats {
+  totalProducts: number;
+  activeProducts: number;
+  inactiveProducts: number;
+  lowStockProducts: number;
+  outOfStockProducts: number;
+  normalStockProducts: number;
+  controlledProducts: number;
+  expiringIn30Days: number;
+  expiringIn60Days: number;
+  expiringIn90Days: number;
+  expiredBatches: number;
+  totalBatches: number;
+  activeBatches: number;
+}
+
+// Lote próximo a vencer con información del producto
+export interface IExpiringBatch {
+  id: string;
+  batchNumber: string;
+  expiryDate: string;
+  quantity: number;
+  status: 'ACTIVE' | 'EXPIRED' | 'DEPLETED' | 'NEAR_EXPIRY';
+  product: {
+    id: string;
+    commercialName: string;
+    internalCode: string;
+  };
 }
 
 // Enums para productos

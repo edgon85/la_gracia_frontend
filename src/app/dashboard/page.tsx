@@ -21,9 +21,9 @@ import {
   Plus,
 } from 'lucide-react';
 import { getValidatedUser } from '@/actions/auth.actions';
-import { getProductsAction } from '@/actions/product.actions';
+import { getProductStatsAction } from '@/actions/product.actions';
 import { redirect } from 'next/navigation';
-import { hasPermission, Module, Action } from '@/lib/permissions';
+import { hasPermission, Module, Action, IProductStats } from '@/lib';
 
 export default async function DashboardPage() {
   const user = await getValidatedUser();
@@ -38,16 +38,30 @@ export default async function DashboardPage() {
 
   // Obtener estadísticas de productos solo si tiene permisos
   const canViewProducts = can('products');
-  const productsResponse = canViewProducts
-    ? await getProductsAction({ limit: 1000 })
-    : { data: [] };
-  const products = 'error' in productsResponse ? [] : productsResponse.data;
 
-  const totalProducts = products.length;
-  const lowStockProducts = products.filter(
-    (p) => p.totalStock <= p.minimumStock && p.totalStock > 0
-  ).length;
-  const outOfStockProducts = products.filter((p) => p.totalStock <= 0).length;
+  // Valores por defecto para estadísticas
+  let stats: IProductStats = {
+    totalProducts: 0,
+    activeProducts: 0,
+    inactiveProducts: 0,
+    lowStockProducts: 0,
+    outOfStockProducts: 0,
+    normalStockProducts: 0,
+    controlledProducts: 0,
+    expiringIn30Days: 0,
+    expiringIn60Days: 0,
+    expiringIn90Days: 0,
+    expiredBatches: 0,
+    totalBatches: 0,
+    activeBatches: 0,
+  };
+
+  if (canViewProducts) {
+    const statsResponse = await getProductStatsAction();
+    if (!('error' in statsResponse)) {
+      stats = statsResponse;
+    }
+  }
 
   // Accesos rápidos principales - con permisos
   const allQuickActions = [
@@ -119,7 +133,7 @@ export default async function DashboardPage() {
         {
           label: 'Productos',
           href: '/dashboard/products',
-          count: totalProducts,
+          count: stats.totalProducts,
           module: 'products',
         },
         {
@@ -203,7 +217,7 @@ export default async function DashboardPage() {
                   <Package className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{totalProducts}</p>
+                  <p className="text-2xl font-bold">{stats.totalProducts}</p>
                   <p className="text-xs text-muted-foreground">Productos</p>
                 </div>
               </div>
@@ -217,37 +231,35 @@ export default async function DashboardPage() {
                   <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">
-                    {totalProducts - lowStockProducts - outOfStockProducts}
-                  </p>
+                  <p className="text-2xl font-bold">{stats.normalStockProducts}</p>
                   <p className="text-xs text-muted-foreground">Stock OK</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className={lowStockProducts > 0 ? 'border-yellow-300 dark:border-yellow-700' : ''}>
+          <Card className={stats.lowStockProducts > 0 ? 'border-yellow-300 dark:border-yellow-700' : ''}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
                   <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{lowStockProducts}</p>
+                  <p className="text-2xl font-bold">{stats.lowStockProducts}</p>
                   <p className="text-xs text-muted-foreground">Stock Bajo</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className={outOfStockProducts > 0 ? 'border-red-300 dark:border-red-700' : ''}>
+          <Card className={stats.outOfStockProducts > 0 ? 'border-red-300 dark:border-red-700' : ''}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
                   <Clock className="h-5 w-5 text-red-600 dark:text-red-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{outOfStockProducts}</p>
+                  <p className="text-2xl font-bold">{stats.outOfStockProducts}</p>
                   <p className="text-xs text-muted-foreground">Sin Stock</p>
                 </div>
               </div>
