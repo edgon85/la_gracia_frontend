@@ -343,7 +343,7 @@ export async function getProductStatsAction(): Promise<
  */
 export async function getExpiringBatchesAction(
   days: number = 30,
-  location?: 'FARMACIA' | 'BODEGA'
+  location?: 'farmacia' | 'bodega'
 ): Promise<IExpiringBatch[] | { error: string }> {
   try {
     const token = await getToken();
@@ -354,7 +354,7 @@ export async function getExpiringBatchesAction(
 
     const params = new URLSearchParams();
     params.append('days', days.toString());
-    if (location) params.append('location', location);
+    if (location) params.append('location', location.toUpperCase());
 
     const response = await fetch(
       `${API_URL}/products/batches/expiring?${params.toString()}`,

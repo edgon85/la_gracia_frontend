@@ -35,11 +35,6 @@ interface ExpiringBatchesPageProps {
   initialData?: IExpiringBatch[];
 }
 
-// Convertir location a mayúsculas para el backend
-const toBackendLocation = (loc: 'farmacia' | 'bodega'): 'FARMACIA' | 'BODEGA' => {
-  return loc.toUpperCase() as 'FARMACIA' | 'BODEGA';
-};
-
 export function ExpiringBatchesPage({
   location,
   initialData = [],
@@ -57,7 +52,7 @@ export function ExpiringBatchesPage({
   const fetchBatches = async () => {
     setLoading(true);
     try {
-      const response = await getExpiringBatchesAction(days, toBackendLocation(location));
+      const response = await getExpiringBatchesAction(days, location);
 
       if ('error' in response) {
         toast.error(response.error);
