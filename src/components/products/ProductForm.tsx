@@ -121,9 +121,10 @@ const unitOfMeasureLabels: Record<UnitOfMeasure, string> = {
 interface ProductFormProps {
   product?: IProduct;
   isEditing?: boolean;
+  defaultLocation?: 'farmacia' | 'bodega';
 }
 
-export function ProductForm({ product, isEditing = false }: ProductFormProps) {
+export function ProductForm({ product, isEditing = false, defaultLocation = 'bodega' }: ProductFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -134,6 +135,12 @@ export function ProductForm({ product, isEditing = false }: ProductFormProps) {
   const [providers, setProviders] = useState<IProvider[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const { user } = useAuthStore();
+
+  // Determine redirect path based on location
+  const getRedirectPath = (location?: string) => {
+    const loc = location?.toUpperCase() || defaultLocation.toUpperCase();
+    return loc === 'FARMACIA' ? '/dashboard/pharmacy/products' : '/dashboard/warehouse/products';
+  };
 
   const isAdmin = user?.roles?.includes(Role.ADMIN);
 
@@ -161,6 +168,7 @@ export function ProductForm({ product, isEditing = false }: ProductFormProps) {
       quantity: 1,
       purchasePrice: 0,
       salePrice: 0,
+      location: defaultLocation.toUpperCase(),
     },
   });
 
@@ -236,7 +244,7 @@ export function ProductForm({ product, isEditing = false }: ProductFormProps) {
         toast.error(response.error);
       } else {
         toast.success('Producto eliminado exitosamente');
-        router.push('/dashboard/products');
+        router.push(getRedirectPath(product?.location));
       }
     } catch (error) {
       toast.error('Error al eliminar el producto');
@@ -269,7 +277,7 @@ export function ProductForm({ product, isEditing = false }: ProductFormProps) {
           toast.error(response.error);
         } else {
           toast.success('Producto actualizado exitosamente');
-          router.push('/dashboard/products');
+          router.push(getRedirectPath(data.location));
         }
       } else {
         const createData = data as CreateProductFormData;
@@ -292,6 +300,7 @@ export function ProductForm({ product, isEditing = false }: ProductFormProps) {
             quantity: createData.quantity || 0,
             purchasePrice: createData.purchasePrice || 0,
             salePrice: createData.salePrice || 0,
+            location: createData.location as 'FARMACIA' | 'BODEGA',
           },
         });
 
@@ -299,7 +308,7 @@ export function ProductForm({ product, isEditing = false }: ProductFormProps) {
           toast.error(response.error);
         } else {
           toast.success('Producto creado exitosamente');
-          router.push('/dashboard/products');
+          router.push(getRedirectPath(createData.location));
         }
       }
     } catch (error) {
@@ -731,7 +740,7 @@ export function ProductForm({ product, isEditing = false }: ProductFormProps) {
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.push('/dashboard/products')}
+          onClick={() => router.push(getRedirectPath(product?.location))}
           disabled={isSubmitting || isDeleting}
         >
           Cancelar

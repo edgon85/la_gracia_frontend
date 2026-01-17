@@ -28,6 +28,7 @@ interface ProductDetailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onBatchAdded?: () => void;
+  location?: 'farmacia' | 'bodega';
 }
 
 export function ProductDetailModal({
@@ -35,10 +36,23 @@ export function ProductDetailModal({
   open,
   onOpenChange,
   onBatchAdded,
+  location,
 }: ProductDetailModalProps) {
   const [isAddBatchOpen, setIsAddBatchOpen] = useState(false);
 
   if (!product) return null;
+
+  // Filtrar lotes por ubicación si se especifica
+  const filteredBatches = location
+    ? product.batches.filter(batch => batch.location === location.toUpperCase())
+    : product.batches;
+
+  // Calcular stock por ubicación
+  const locationStock = location
+    ? filteredBatches
+        .filter(batch => batch.status === 'ACTIVE')
+        .reduce((sum, batch) => sum + batch.quantity, 0)
+    : product.totalStock;
 
   const formatPrice = (price: string) => {
     return `Q${parseFloat(price).toFixed(2)}`;
@@ -52,11 +66,11 @@ export function ProductDetailModal({
     });
   };
 
-  const getStockStatus = () => {
-    if (product.totalStock <= 0) {
+  const getStockStatus = (stock: number) => {
+    if (stock <= 0) {
       return <Badge variant="destructive">Sin stock</Badge>;
     }
-    if (product.totalStock <= product.minimumStock) {
+    if (stock <= product.minimumStock) {
       return <Badge className="bg-yellow-500">Stock bajo</Badge>;
     }
     return <Badge className="bg-green-500">Disponible</Badge>;
@@ -170,12 +184,19 @@ export function ProductDetailModal({
             <h3 className="font-semibold mb-3 flex items-center gap-2">
               <AlertCircle className="h-4 w-4" />
               Stock e Inventario
+              {location && (
+                <Badge variant="outline" className="ml-2">
+                  {location === 'farmacia' ? 'Farmacia' : 'Bodega'}
+                </Badge>
+              )}
             </h3>
             <div className="grid grid-cols-3 gap-4 text-sm">
               <div className="bg-muted/50 rounded-lg p-3 text-center">
-                <span className="text-muted-foreground text-xs">Stock Total</span>
-                <p className="text-2xl font-bold">{product.totalStock}</p>
-                {getStockStatus()}
+                <span className="text-muted-foreground text-xs">
+                  {location ? `Stock en ${location === 'farmacia' ? 'Farmacia' : 'Bodega'}` : 'Stock Total'}
+                </span>
+                <p className="text-2xl font-bold">{locationStock}</p>
+                {getStockStatus(locationStock)}
               </div>
               <div className="bg-muted/50 rounded-lg p-3 text-center">
                 <span className="text-muted-foreground text-xs">Stock Mínimo</span>
@@ -221,7 +242,12 @@ export function ProductDetailModal({
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                Lotes ({product.batches.length})
+                Lotes ({filteredBatches.length})
+                {location && (
+                  <Badge variant="outline" className="ml-1">
+                    {location === 'farmacia' ? 'Farmacia' : 'Bodega'}
+                  </Badge>
+                )}
               </h3>
               <Button
                 size="sm"
@@ -231,9 +257,9 @@ export function ProductDetailModal({
                 Agregar Lote
               </Button>
             </div>
-            {product.batches.length > 0 ? (
+            {filteredBatches.length > 0 ? (
               <div className="space-y-3">
-                {product.batches.map((batch) => (
+                {filteredBatches.map((batch) => (
                   <div
                     key={batch.id}
                     className="bg-muted/50 rounded-lg p-3 text-sm"

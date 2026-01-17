@@ -52,11 +52,12 @@ export interface ICreateExitRequest {
   productId: string;
   quantity: number;
   type: ExitType;
+  location: 'FARMACIA' | 'BODEGA';
   reason?: string;
   reference?: string;
   patientName?: string;
   patientId?: string;
-  location?: 'FARMACIA' | 'BODEGA';
+  notes?: string;
 }
 
 export interface ICreateExitResponse {

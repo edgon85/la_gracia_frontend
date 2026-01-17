@@ -5,8 +5,10 @@ interface DispensationState {
   items: IDispensationItem[];
   notes: string;
   reference: string;
+  location: 'farmacia' | 'bodega' | null;
 
   // Actions
+  setLocation: (location: 'farmacia' | 'bodega') => void;
   addItem: (product: IProduct, quantity?: number) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
@@ -18,12 +20,30 @@ interface DispensationState {
   // Computed
   getTotalItems: () => number;
   getTotalQuantity: () => number;
+  getStockByLocation: (product: IProduct) => number;
 }
+
+// Helper para calcular stock por ubicación
+const calculateStockByLocation = (
+  product: IProduct,
+  location: 'farmacia' | 'bodega' | null
+): number => {
+  if (!location) {
+    return product.totalStock;
+  }
+  const backendLocation = location.toUpperCase() as 'FARMACIA' | 'BODEGA';
+  return product.batches
+    .filter((batch) => batch.location === backendLocation && batch.status === 'ACTIVE')
+    .reduce((sum, batch) => sum + batch.quantity, 0);
+};
 
 export const useDispensationStore = create<DispensationState>((set, get) => ({
   items: [],
   notes: '',
   reference: '',
+  location: null,
+
+  setLocation: (location: 'farmacia' | 'bodega') => set({ location }),
 
   addItem: (product: IProduct, quantity: number = 1) => {
     const { items } = get();
@@ -83,4 +103,7 @@ export const useDispensationStore = create<DispensationState>((set, get) => ({
 
   getTotalQuantity: () =>
     get().items.reduce((total, item) => total + item.quantity, 0),
+
+  getStockByLocation: (product: IProduct) =>
+    calculateStockByLocation(product, get().location),
 }));

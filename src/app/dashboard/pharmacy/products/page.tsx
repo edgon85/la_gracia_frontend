@@ -18,7 +18,7 @@ export default async function PharmacyProductsPage() {
       location="farmacia"
       title="Productos de Farmacia"
       description="Inventario de productos disponibles en farmacia"
-      showCreateButton={false}
+      showCreateButton={true}
     />
   );
 }

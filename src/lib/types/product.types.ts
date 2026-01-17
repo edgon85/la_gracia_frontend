@@ -185,6 +185,7 @@ export interface IInitialBatch {
   quantity: number;
   purchasePrice: number;
   salePrice: number;
+  location: 'FARMACIA' | 'BODEGA';
 }
 
 export interface ICreateProductRequest {

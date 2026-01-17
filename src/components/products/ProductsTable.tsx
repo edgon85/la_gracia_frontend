@@ -22,7 +22,19 @@ interface ProductsTableProps {
   sortField?: string;
   sortOrder?: 'asc' | 'desc';
   onRefresh?: () => void;
+  location?: 'farmacia' | 'bodega';
 }
+
+// Calcular stock por ubicación
+const getStockByLocation = (product: IProduct, location?: 'farmacia' | 'bodega'): number => {
+  if (!location) {
+    return product.totalStock;
+  }
+  const backendLocation = location.toUpperCase() as 'FARMACIA' | 'BODEGA';
+  return product.batches
+    .filter(batch => batch.location === backendLocation && batch.status === 'ACTIVE')
+    .reduce((sum, batch) => sum + batch.quantity, 0);
+};
 
 export function ProductsTable({
   products,
@@ -30,6 +42,7 @@ export function ProductsTable({
   sortField,
   sortOrder,
   onRefresh,
+  location,
 }: ProductsTableProps) {
   const router = useRouter();
   const [selectedProduct, setSelectedProduct] = useState<IProduct | null>(null);
@@ -59,11 +72,11 @@ export function ProductsTable({
     return `Q${parseFloat(price).toFixed(2)}`;
   };
 
-  const getStockStatus = (product: IProduct) => {
-    if (product.totalStock <= 0) {
+  const getStockStatus = (stock: number, minimumStock: number) => {
+    if (stock <= 0) {
       return <Badge variant="destructive">Sin stock</Badge>;
     }
-    if (product.totalStock <= product.minimumStock) {
+    if (stock <= minimumStock) {
       return <Badge className="bg-yellow-500">Stock bajo</Badge>;
     }
     return <Badge className="bg-green-500">Disponible</Badge>;
@@ -161,10 +174,15 @@ export function ProductsTable({
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-col gap-1">
-                      <span className="font-medium">{product.totalStock}</span>
-                      {getStockStatus(product)}
-                    </div>
+                    {(() => {
+                      const stock = getStockByLocation(product, location);
+                      return (
+                        <div className="flex flex-col gap-1">
+                          <span className="font-medium">{stock}</span>
+                          {getStockStatus(stock, product.minimumStock)}
+                        </div>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell className="font-medium">
                     {formatPrice(price)}
@@ -206,6 +224,7 @@ export function ProductsTable({
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
         onBatchAdded={onRefresh}
+        location={location}
       />
     </div>
   );

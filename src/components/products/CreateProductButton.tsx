@@ -10,6 +10,7 @@ interface CreateProductButtonProps {
   className?: string;
   showIcon?: boolean;
   children?: React.ReactNode;
+  location?: 'farmacia' | 'bodega';
 }
 
 export function CreateProductButton({
@@ -18,11 +19,15 @@ export function CreateProductButton({
   className,
   showIcon = true,
   children,
+  location = 'bodega',
 }: CreateProductButtonProps) {
   const router = useRouter();
 
   const handleClick = () => {
-    router.push('/dashboard/products/new');
+    const path = location === 'farmacia'
+      ? '/dashboard/pharmacy/products/new'
+      : '/dashboard/warehouse/products/new';
+    router.push(path);
   };
 
   return (

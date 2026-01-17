@@ -44,6 +44,7 @@ export function DispensationCart({ onSuccess }: DispensationCartProps) {
     items,
     notes,
     reference,
+    location,
     removeItem,
     updateQuantity,
     setNotes,
@@ -51,14 +52,25 @@ export function DispensationCart({ onSuccess }: DispensationCartProps) {
     clearCart,
     getTotalItems,
     getTotalQuantity,
+    getStockByLocation,
   } = useDispensationStore();
 
   const formatPrice = (price: string) => {
     return parseFloat(price);
   };
 
+  // Obtener lotes filtrados por ubicación
+  const getLocationBatches = (product: (typeof items)[0]['product']) => {
+    if (!location) return product.batches;
+    const backendLocation = location.toUpperCase() as 'FARMACIA' | 'BODEGA';
+    return product.batches.filter(
+      (batch) => batch.location === backendLocation && batch.status === 'ACTIVE'
+    );
+  };
+
   const getItemTotal = (item: (typeof items)[0]) => {
-    const mainBatch = item.product.batches[0];
+    const locationBatches = getLocationBatches(item.product);
+    const mainBatch = locationBatches[0] || item.product.batches[0];
     const price = mainBatch?.salePrice || '0';
     return formatPrice(price) * item.quantity;
   };
@@ -81,11 +93,12 @@ export function DispensationCart({ onSuccess }: DispensationCartProps) {
       return;
     }
 
-    // Validar stock antes de enviar
+    // Validar stock antes de enviar (usando stock por ubicación)
     for (const item of items) {
-      if (item.quantity > item.product.totalStock) {
+      const availableStock = getStockByLocation(item.product);
+      if (item.quantity > availableStock) {
         toast.error(
-          `Stock insuficiente para ${item.product.commercialName}. Disponible: ${item.product.totalStock}`
+          `Stock insuficiente para ${item.product.commercialName}. Disponible: ${availableStock}`
         );
         return;
       }
@@ -95,6 +108,11 @@ export function DispensationCart({ onSuccess }: DispensationCartProps) {
   };
 
   const confirmDispense = async () => {
+    if (!location) {
+      toast.error('No se ha definido la ubicación');
+      return;
+    }
+
     setIsLoading(true);
     setShowConfirm(false);
 
@@ -102,12 +120,16 @@ export function DispensationCart({ onSuccess }: DispensationCartProps) {
     let totalQuantityDispensed = 0;
     const errors: string[] = [];
 
+    // Convertir location a formato backend
+    const backendLocation = location.toUpperCase() as 'FARMACIA' | 'BODEGA';
+
     // Procesar cada item individualmente
     for (const item of items) {
       const response = await createExitMovementAction({
         productId: item.product.id,
         quantity: item.quantity,
         type: 'DISPENSATION',
+        location: backendLocation,
         reason: notes || item.notes || 'Dispensación',
         reference: reference || undefined,
       });
@@ -167,10 +189,12 @@ export function DispensationCart({ onSuccess }: DispensationCartProps) {
           {/* Items del carrito */}
           <div className="space-y-3 max-h-96 overflow-y-auto">
             {items.map((item) => {
-              const mainBatch = item.product.batches[0];
+              const locationBatches = getLocationBatches(item.product);
+              const mainBatch = locationBatches[0] || item.product.batches[0];
               const price = mainBatch?.salePrice || '0';
               const itemTotal = getItemTotal(item);
-              const isOverStock = item.quantity > item.product.totalStock;
+              const availableStock = getStockByLocation(item.product);
+              const isOverStock = item.quantity > availableStock;
 
               return (
                 <div
@@ -195,7 +219,7 @@ export function DispensationCart({ onSuccess }: DispensationCartProps) {
                         {isOverStock && (
                           <div className="flex items-center gap-1 text-red-500 text-xs mt-1">
                             <AlertCircle className="h-3 w-3" />
-                            Stock disponible: {item.product.totalStock}
+                            Stock disponible: {availableStock}
                           </div>
                         )}
                       </div>
@@ -219,7 +243,7 @@ export function DispensationCart({ onSuccess }: DispensationCartProps) {
                             handleQuantityChange(
                               item.product.id,
                               item.quantity - 1,
-                              item.product.totalStock
+                              availableStock
                             )
                           }
                         >
@@ -232,12 +256,12 @@ export function DispensationCart({ onSuccess }: DispensationCartProps) {
                             handleQuantityChange(
                               item.product.id,
                               parseInt(e.target.value) || 0,
-                              item.product.totalStock
+                              availableStock
                             )
                           }
                           className="w-16 h-8 text-center"
                           min={1}
-                          max={item.product.totalStock}
+                          max={availableStock}
                         />
                         <Button
                           variant="outline"
@@ -247,7 +271,7 @@ export function DispensationCart({ onSuccess }: DispensationCartProps) {
                             handleQuantityChange(
                               item.product.id,
                               item.quantity + 1,
-                              item.product.totalStock
+                              availableStock
                             )
                           }
                         >
@@ -308,7 +332,7 @@ export function DispensationCart({ onSuccess }: DispensationCartProps) {
               <Button
                 className="flex-1"
                 onClick={handleDispense}
-                disabled={isLoading || items.some((i) => i.quantity > i.product.totalStock)}
+                disabled={isLoading || items.some((i) => i.quantity > getStockByLocation(i.product))}
               >
                 {isLoading ? (
                   <>

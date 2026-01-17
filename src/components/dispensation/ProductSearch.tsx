@@ -20,6 +20,17 @@ const toBackendLocation = (loc: 'farmacia' | 'bodega'): 'FARMACIA' | 'BODEGA' =>
   return loc.toUpperCase() as 'FARMACIA' | 'BODEGA';
 };
 
+// Calcular stock por ubicación
+const getStockByLocation = (product: IProduct, loc?: 'farmacia' | 'bodega'): number => {
+  if (!loc) {
+    return product.totalStock;
+  }
+  const backendLocation = loc.toUpperCase() as 'FARMACIA' | 'BODEGA';
+  return product.batches
+    .filter((batch) => batch.location === backendLocation && batch.status === 'ACTIVE')
+    .reduce((sum, batch) => sum + batch.quantity, 0);
+};
+
 export function ProductSearch({ location }: ProductSearchProps) {
   const [search, setSearch] = useState('');
   const [results, setResults] = useState<IProduct[]>([]);
@@ -28,7 +39,14 @@ export function ProductSearch({ location }: ProductSearchProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const debouncedSearch = useDebounce(search, 300);
 
-  const { addItem } = useDispensationStore();
+  const { addItem, setLocation } = useDispensationStore();
+
+  // Establecer location en el store al montar
+  useEffect(() => {
+    if (location) {
+      setLocation(location);
+    }
+  }, [location, setLocation]);
 
   useEffect(() => {
     const searchProducts = async () => {
@@ -73,7 +91,8 @@ export function ProductSearch({ location }: ProductSearchProps) {
   }, []);
 
   const handleAddProduct = (product: IProduct) => {
-    if (product.totalStock <= 0) return;
+    const stock = getStockByLocation(product, location);
+    if (stock <= 0) return;
     addItem(product, 1);
     setSearch('');
     setResults([]);
@@ -104,9 +123,16 @@ export function ProductSearch({ location }: ProductSearchProps) {
         <Card className="absolute top-full left-0 right-0 mt-1 z-50 max-h-96 overflow-y-auto shadow-lg">
           <div className="p-2 space-y-1">
             {results.map((product) => {
-              const mainBatch = product.batches[0];
+              // Filtrar lotes por ubicación para obtener el precio correcto
+              const locationBatches = location
+                ? product.batches.filter(
+                    (b) => b.location === toBackendLocation(location) && b.status === 'ACTIVE'
+                  )
+                : product.batches;
+              const mainBatch = locationBatches[0] || product.batches[0];
               const price = mainBatch?.salePrice || '0.00';
-              const hasStock = product.totalStock > 0;
+              const stock = getStockByLocation(product, location);
+              const hasStock = stock > 0;
 
               return (
                 <div
@@ -147,7 +173,7 @@ export function ProductSearch({ location }: ProductSearchProps) {
                       <div className="text-sm">
                         {hasStock ? (
                           <span className="text-green-600">
-                            Stock: {product.totalStock}
+                            Stock: {stock}
                           </span>
                         ) : (
                           <span className="text-red-500">Sin stock</span>

@@ -136,7 +136,7 @@ export function ProductsPage({
             {description}
           </p>
         </div>
-        {showCreateButton && <CreateProductButton />}
+        {showCreateButton && <CreateProductButton location={location} />}
       </div>
 
       {/* Filters */}
@@ -159,6 +159,7 @@ export function ProductsPage({
               sortField={sortField}
               sortOrder={sortOrder}
               onRefresh={fetchProducts}
+              location={location}
             />
             <Pagination
               currentPage={currentPage}
