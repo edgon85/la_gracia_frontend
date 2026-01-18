@@ -9,6 +9,43 @@ export interface ICategory {
   updatedAt: string;
 }
 
+export type ContactDepartment = 'farmacia' | 'bodega' | 'general' | 'ventas' | 'cobranza';
+
+export interface IProviderContact {
+  id: string;
+  name: string;
+  position: string | null;
+  department: ContactDepartment;
+  phone: string | null;
+  email: string | null;
+  isMain: boolean;
+  notes: string | null;
+  isActive: boolean;
+  providerId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ICreateContactRequest {
+  name: string;
+  position?: string;
+  department?: ContactDepartment;
+  phone?: string;
+  email?: string;
+  isMain?: boolean;
+  notes?: string;
+}
+
+export interface IUpdateContactRequest {
+  name?: string;
+  position?: string;
+  department?: ContactDepartment;
+  phone?: string;
+  email?: string;
+  isMain?: boolean;
+  notes?: string;
+}
+
 export interface IProvider {
   id: string;
   name: string;
@@ -19,6 +56,7 @@ export interface IProvider {
   contactPerson: string;
   notes: string | null;
   isActive: boolean;
+  contacts?: IProviderContact[];
   createdAt: string;
   updatedAt: string;
 }

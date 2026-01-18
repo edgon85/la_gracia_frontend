@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { IProvider } from '@/lib';
 import {
@@ -13,12 +14,14 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ArrowUpDown, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ProviderDetailModal } from './ProviderDetailModal';
 
 interface ProvidersTableProps {
   providers: IProvider[];
   onSort?: (field: string) => void;
   sortField?: string;
   sortOrder?: 'asc' | 'desc';
+  onRefresh?: () => void;
 }
 
 export function ProvidersTable({
@@ -26,8 +29,16 @@ export function ProvidersTable({
   onSort,
   sortField,
   sortOrder,
+  onRefresh,
 }: ProvidersTableProps) {
   const router = useRouter();
+  const [selectedProvider, setSelectedProvider] = useState<IProvider | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  const handleOpenDetail = (provider: IProvider) => {
+    setSelectedProvider(provider);
+    setIsDetailOpen(true);
+  };
 
   const handleSort = (field: string) => {
     if (onSort) {
@@ -45,8 +56,9 @@ export function ProvidersTable({
   };
 
   return (
-    <div className="rounded-md border">
-      <Table>
+    <>
+      <div className="rounded-md border">
+        <Table>
         <TableHeader>
           <TableRow>
             <TableHead>
@@ -77,7 +89,14 @@ export function ProvidersTable({
           ) : (
             providers.map((provider) => (
               <TableRow key={provider.id}>
-                <TableCell className="font-medium">{provider.name}</TableCell>
+                <TableCell>
+                  <button
+                    onClick={() => handleOpenDetail(provider)}
+                    className="font-medium text-left hover:text-primary hover:underline cursor-pointer transition-colors"
+                  >
+                    {provider.name}
+                  </button>
+                </TableCell>
                 <TableCell>{provider.nit}</TableCell>
                 <TableCell>{provider.phone}</TableCell>
                 <TableCell className="text-muted-foreground">
@@ -107,5 +126,13 @@ export function ProvidersTable({
         </TableBody>
       </Table>
     </div>
+
+      <ProviderDetailModal
+        provider={selectedProvider}
+        open={isDetailOpen}
+        onOpenChange={setIsDetailOpen}
+        onContactAdded={onRefresh}
+      />
+    </>
   );
 }

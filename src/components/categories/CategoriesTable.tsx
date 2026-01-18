@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ICategory } from '@/lib';
 import {
@@ -13,6 +14,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ArrowUpDown, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { CategoryDetailModal } from './CategoryDetailModal';
 
 interface CategoriesTableProps {
   categories: ICategory[];
@@ -28,6 +30,13 @@ export function CategoriesTable({
   sortOrder,
 }: CategoriesTableProps) {
   const router = useRouter();
+  const [selectedCategory, setSelectedCategory] = useState<ICategory | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  const handleOpenDetail = (category: ICategory) => {
+    setSelectedCategory(category);
+    setIsDetailOpen(true);
+  };
 
   const handleSort = (field: string) => {
     if (onSort) {
@@ -45,6 +54,7 @@ export function CategoriesTable({
   };
 
   return (
+    <>
     <div className="rounded-md border">
       <Table>
         <TableHeader>
@@ -85,14 +95,17 @@ export function CategoriesTable({
           ) : (
             categories.map((category) => (
               <TableRow key={category.id}>
-                <TableCell className="font-medium">
-                  <div className="flex items-center gap-2">
+                <TableCell>
+                  <button
+                    onClick={() => handleOpenDetail(category)}
+                    className="flex items-center gap-2 font-medium text-left hover:text-primary hover:underline cursor-pointer transition-colors"
+                  >
                     <div
                       className="h-3 w-3 rounded-full"
                       style={{ backgroundColor: category.color }}
                     />
                     {category.name}
-                  </div>
+                  </button>
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline">{category.code}</Badge>
@@ -132,5 +145,12 @@ export function CategoriesTable({
         </TableBody>
       </Table>
     </div>
+
+      <CategoryDetailModal
+        category={selectedCategory}
+        open={isDetailOpen}
+        onOpenChange={setIsDetailOpen}
+      />
+    </>
   );
 }

@@ -337,9 +337,9 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
             <div className="rounded-md bg-muted px-4 py-2 font-mono text-lg">
               {product.barcode}
             </div>
-            <p className="text-sm text-muted-foreground">
+            <span className="text-sm text-muted-foreground">
               El código de barras se genera automáticamente y no puede ser modificado
-            </p>
+            </span>
           </div>
         </div>
       )}
@@ -675,7 +675,7 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
                 }`}
               />
             </button>
-            <Label className="cursor-pointer" onClick={!isTogglingStatus ? handleToggleStatus : undefined}>
+            <span className="cursor-pointer" onClick={!isTogglingStatus ? handleToggleStatus : undefined}>
               {isTogglingStatus ? (
                 <span className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -684,12 +684,12 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
               ) : (
                 isActive ? 'Activo' : 'Inactivo'
               )}
-            </Label>
-            <p className="text-sm text-muted-foreground">
+            </span>
+            <span className="text-sm text-muted-foreground">
               {isActive
                 ? 'El producto está disponible para la venta'
                 : 'El producto no aparecerá en las listas de selección'}
-            </p>
+            </span>
           </div>
         </div>
       )}

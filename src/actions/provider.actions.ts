@@ -1,6 +1,15 @@
 'use server';
 
-import { IProvidersResponse, IProviderFilters, ICreateProviderRequest, IProvider } from '@/lib';
+import {
+  IProvidersResponse,
+  IProviderFilters,
+  ICreateProviderRequest,
+  IProvider,
+  IProviderContact,
+  ICreateContactRequest,
+  IUpdateContactRequest,
+  ContactDepartment,
+} from '@/lib';
 import { getToken } from './auth.actions';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -231,6 +240,301 @@ export async function deleteProviderAction(
     return { success: true };
   } catch (error) {
     console.error('Error deleting provider:', error);
+    return {
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+// ==================== CONTACTOS DE PROVEEDOR ====================
+
+/**
+ * Obtiene todos los contactos de un proveedor
+ * GET /providers/:providerId/contacts
+ */
+export async function getProviderContactsAction(
+  providerId: string
+): Promise<IProviderContact[] | { error: string }> {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      return { error: 'No autenticado' };
+    }
+
+    const response = await fetch(`${API_URL}/providers/${providerId}/contacts`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return {
+        error: errorData.message || 'Error al obtener contactos',
+      };
+    }
+
+    const contacts: IProviderContact[] = await response.json();
+    return contacts;
+  } catch (error) {
+    console.error('Error fetching provider contacts:', error);
+    return {
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+/**
+ * Obtiene contactos por departamento
+ * GET /providers/:providerId/contacts/department/:department
+ */
+export async function getProviderContactsByDepartmentAction(
+  providerId: string,
+  department: ContactDepartment
+): Promise<IProviderContact[] | { error: string }> {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      return { error: 'No autenticado' };
+    }
+
+    const response = await fetch(
+      `${API_URL}/providers/${providerId}/contacts/department/${department}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        cache: 'no-store',
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return {
+        error: errorData.message || 'Error al obtener contactos',
+      };
+    }
+
+    const contacts: IProviderContact[] = await response.json();
+    return contacts;
+  } catch (error) {
+    console.error('Error fetching provider contacts by department:', error);
+    return {
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+/**
+ * Agrega un contacto a un proveedor
+ * POST /providers/:providerId/contacts
+ */
+export async function addProviderContactAction(
+  providerId: string,
+  data: ICreateContactRequest
+): Promise<{ success: true; contact: IProviderContact } | { error: string }> {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      return { error: 'No autenticado' };
+    }
+
+    const response = await fetch(`${API_URL}/providers/${providerId}/contacts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return {
+        error: errorData.message || 'Error al agregar contacto',
+      };
+    }
+
+    const contact: IProviderContact = await response.json();
+    return { success: true, contact };
+  } catch (error) {
+    console.error('Error adding provider contact:', error);
+    return {
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+/**
+ * Actualiza un contacto
+ * PATCH /providers/contacts/:contactId
+ */
+export async function updateProviderContactAction(
+  contactId: string,
+  data: IUpdateContactRequest
+): Promise<{ success: true; contact: IProviderContact } | { error: string }> {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      return { error: 'No autenticado' };
+    }
+
+    const response = await fetch(`${API_URL}/providers/contacts/${contactId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return {
+        error: errorData.message || 'Error al actualizar contacto',
+      };
+    }
+
+    const contact: IProviderContact = await response.json();
+    return { success: true, contact };
+  } catch (error) {
+    console.error('Error updating provider contact:', error);
+    return {
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+/**
+ * Activa/Desactiva un contacto
+ * PATCH /providers/contacts/:contactId/toggle-active
+ */
+export async function toggleProviderContactStatusAction(
+  contactId: string
+): Promise<{ success: true; contact: IProviderContact } | { error: string }> {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      return { error: 'No autenticado' };
+    }
+
+    const response = await fetch(
+      `${API_URL}/providers/contacts/${contactId}/toggle-active`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        cache: 'no-store',
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return {
+        error: errorData.message || 'Error al cambiar estado del contacto',
+      };
+    }
+
+    const contact: IProviderContact = await response.json();
+    return { success: true, contact };
+  } catch (error) {
+    console.error('Error toggling provider contact status:', error);
+    return {
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+/**
+ * Establece un contacto como principal
+ * PATCH /providers/contacts/:contactId/set-main
+ */
+export async function setMainProviderContactAction(
+  contactId: string
+): Promise<{ success: true; contact: IProviderContact } | { error: string }> {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      return { error: 'No autenticado' };
+    }
+
+    const response = await fetch(
+      `${API_URL}/providers/contacts/${contactId}/set-main`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        cache: 'no-store',
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return {
+        error: errorData.message || 'Error al establecer contacto principal',
+      };
+    }
+
+    const contact: IProviderContact = await response.json();
+    return { success: true, contact };
+  } catch (error) {
+    console.error('Error setting main provider contact:', error);
+    return {
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+/**
+ * Elimina un contacto
+ * DELETE /providers/contacts/:contactId
+ */
+export async function deleteProviderContactAction(
+  contactId: string
+): Promise<{ success: true } | { error: string }> {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      return { error: 'No autenticado' };
+    }
+
+    const response = await fetch(`${API_URL}/providers/contacts/${contactId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return {
+        error: errorData.message || 'Error al eliminar contacto',
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting provider contact:', error);
     return {
       error: error instanceof Error ? error.message : 'Error desconocido',
     };

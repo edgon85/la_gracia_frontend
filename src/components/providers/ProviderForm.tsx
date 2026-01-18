@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,11 +8,22 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, Trash2 } from 'lucide-react';
-import { createProviderAction, updateProviderAction, deleteProviderAction, toggleProviderStatusAction } from '@/actions/provider.actions';
-import { IProvider, Role } from '@/lib';
+import { Loader2, Trash2, Users, Plus, Star, Phone, Mail, Briefcase, X } from 'lucide-react';
+import {
+  createProviderAction,
+  updateProviderAction,
+  deleteProviderAction,
+  toggleProviderStatusAction,
+  getProviderContactsAction,
+  deleteProviderContactAction,
+  toggleProviderContactStatusAction,
+  setMainProviderContactAction,
+} from '@/actions/provider.actions';
+import { IProvider, IProviderContact, ContactDepartment, Role } from '@/lib';
 import { useAuthStore } from '@/stores/auth.store';
+import { AddContactModal } from './AddContactModal';
 
 // Schema de validación
 const providerSchema = z.object({
@@ -32,6 +43,22 @@ interface ProviderFormProps {
   isEditing?: boolean;
 }
 
+const departmentLabels: Record<ContactDepartment, string> = {
+  farmacia: 'Farmacia',
+  bodega: 'Bodega',
+  general: 'General',
+  ventas: 'Ventas',
+  cobranza: 'Cobranza',
+};
+
+const departmentColors: Record<ContactDepartment, string> = {
+  farmacia: 'bg-blue-500',
+  bodega: 'bg-amber-500',
+  general: 'bg-gray-500',
+  ventas: 'bg-green-500',
+  cobranza: 'bg-purple-500',
+};
+
 export function ProviderForm({ provider, isEditing = false }: ProviderFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,6 +67,11 @@ export function ProviderForm({ provider, isEditing = false }: ProviderFormProps)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isActive, setIsActive] = useState(provider?.isActive ?? true);
   const { user } = useAuthStore();
+
+  // Estado para contactos
+  const [contacts, setContacts] = useState<IProviderContact[]>(provider?.contacts || []);
+  const [isAddContactOpen, setIsAddContactOpen] = useState(false);
+  const [deletingContactId, setDeletingContactId] = useState<string | null>(null);
 
   const isAdmin = user?.roles?.includes(Role.ADMIN);
 
@@ -136,6 +168,43 @@ export function ProviderForm({ provider, isEditing = false }: ProviderFormProps)
       setIsSubmitting(false);
     }
   };
+
+  // Funciones para manejar contactos
+  const fetchContacts = async () => {
+    if (!provider) return;
+    const response = await getProviderContactsAction(provider.id);
+    if (!('error' in response)) {
+      setContacts(response);
+    }
+  };
+
+  const handleContactAdded = () => {
+    fetchContacts();
+  };
+
+  const handleDeleteContact = async (contactId: string) => {
+    setDeletingContactId(contactId);
+    const response = await deleteProviderContactAction(contactId);
+    if ('error' in response) {
+      toast.error(response.error);
+    } else {
+      toast.success('Contacto eliminado');
+      setContacts(contacts.filter((c) => c.id !== contactId));
+    }
+    setDeletingContactId(null);
+  };
+
+  const handleSetMainContact = async (contactId: string) => {
+    const response = await setMainProviderContactAction(contactId);
+    if ('error' in response) {
+      toast.error(response.error);
+    } else {
+      toast.success('Contacto establecido como principal');
+      fetchContacts();
+    }
+  };
+
+  const activeContacts = contacts.filter((c) => c.isActive);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
@@ -253,6 +322,110 @@ export function ProviderForm({ provider, isEditing = false }: ProviderFormProps)
         </div>
       </div>
 
+      {/* Contactos - Solo en modo edición */}
+      {isEditing && provider && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Contactos ({activeContacts.length})
+            </h2>
+            <Button type="button" size="sm" onClick={() => setIsAddContactOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" />
+              Agregar Contacto
+            </Button>
+          </div>
+
+          {activeContacts.length > 0 ? (
+            <div className="grid gap-3 md:grid-cols-2">
+              {activeContacts.map((contact) => (
+                <div
+                  key={contact.id}
+                  className="bg-muted/50 rounded-lg p-4 text-sm relative"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{contact.name}</span>
+                      {contact.isMain && (
+                        <Badge variant="outline" className="text-xs gap-1 border-yellow-500 text-yellow-600">
+                          <Star className="h-3 w-3" />
+                          Principal
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Badge className={`${departmentColors[contact.department]} text-white text-xs`}>
+                        {departmentLabels[contact.department]}
+                      </Badge>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleDeleteContact(contact.id)}
+                        disabled={deletingContactId === contact.id}
+                      >
+                        {deletingContactId === contact.id ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <X className="h-3 w-3" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {contact.position && (
+                    <div className="flex items-center gap-1 text-muted-foreground text-xs mb-2">
+                      <Briefcase className="h-3 w-3" />
+                      {contact.position}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    {contact.phone && (
+                      <div className="flex items-center gap-1">
+                        <Phone className="h-3 w-3 text-muted-foreground" />
+                        <span>{contact.phone}</span>
+                      </div>
+                    )}
+                    {contact.email && (
+                      <div className="flex items-center gap-1">
+                        <Mail className="h-3 w-3 text-muted-foreground" />
+                        <span className="truncate">{contact.email}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {contact.notes && (
+                    <p className="text-xs text-muted-foreground mt-2 italic">
+                      {contact.notes}
+                    </p>
+                  )}
+
+                  {!contact.isMain && (
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="text-xs p-0 h-auto mt-2"
+                      onClick={() => handleSetMainContact(contact.id)}
+                    >
+                      Establecer como principal
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground text-sm bg-muted/30 rounded-lg">
+              <Users className="h-10 w-10 mx-auto mb-3 opacity-50" />
+              <p>No hay contactos adicionales registrados</p>
+              <p className="text-xs mt-1">Haz clic en "Agregar Contacto" para crear uno</p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Estado del Proveedor - Solo en modo edición */}
       {isEditing && (
         <div className="space-y-4">
@@ -347,6 +520,17 @@ export function ProviderForm({ provider, isEditing = false }: ProviderFormProps)
           {isEditing ? 'Guardar Cambios' : 'Crear Proveedor'}
         </Button>
       </div>
+
+      {/* Modal para agregar contacto */}
+      {provider && (
+        <AddContactModal
+          providerId={provider.id}
+          providerName={provider.name}
+          open={isAddContactOpen}
+          onOpenChange={setIsAddContactOpen}
+          onSuccess={handleContactAdded}
+        />
+      )}
     </form>
   );
 }

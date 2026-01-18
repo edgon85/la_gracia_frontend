@@ -559,12 +559,12 @@ export function AddProductOrBatch({ location }: AddProductOrBatchProps) {
             <form onSubmit={productForm.handleSubmit(onSubmitProduct)} className="space-y-6">
               <div>
                 <h2 className="text-lg font-semibold">Paso 2: Crear Producto Nuevo</h2>
-                <p className="text-sm text-muted-foreground">
+                <span className="text-sm text-muted-foreground">
                   Completa la información del producto y su lote inicial para{' '}
                   <Badge variant="outline" className="ml-1">
                     {location === 'farmacia' ? 'Farmacia' : 'Bodega'}
                   </Badge>
-                </p>
+                </span>
               </div>
 
               <Separator />
