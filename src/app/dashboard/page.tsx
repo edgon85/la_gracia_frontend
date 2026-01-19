@@ -6,19 +6,18 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   Package,
   Users,
   Truck,
   FlaskConical,
+  Warehouse,
   FolderOpen,
   ArrowRight,
   TrendingUp,
   AlertTriangle,
   Clock,
-  Plus,
 } from 'lucide-react';
 import { getValidatedUser } from '@/actions/auth.actions';
 import { getProductStatsAction } from '@/actions/product.actions';
@@ -66,32 +65,42 @@ export default async function DashboardPage() {
   // Accesos rápidos principales - con permisos
   const allQuickActions = [
     {
-      title: 'Dispensar Productos',
+      title: 'Dispensar Farmacia',
       description: 'Registrar salida de medicamentos',
       icon: FlaskConical,
-      href: '/dashboard/farmacia/despachos',
+      href: '/dashboard/pharmacy/dispensations',
       color: 'bg-blue-500',
       highlight: true,
       module: 'pharmacy' as Module,
       action: 'view' as Action,
     },
     {
-      title: 'Ver Productos',
-      description: 'Catálogo completo de productos',
-      icon: Package,
-      href: '/dashboard/products',
-      color: 'bg-green-500',
-      module: 'products' as Module,
+      title: 'Dispensar Bodega',
+      description: 'Registrar salida de insumos',
+      icon: Warehouse,
+      href: '/dashboard/warehouse/dispensations',
+      color: 'bg-cyan-500',
+      highlight: true,
+      module: 'warehouse' as Module,
       action: 'view' as Action,
     },
     {
-      title: 'Nuevo Producto',
-      description: 'Agregar al inventario',
-      icon: Plus,
-      href: '/dashboard/products/new',
-      color: 'bg-purple-500',
-      module: 'products' as Module,
-      action: 'create' as Action,
+      title: 'Stock Farmacia',
+      description: 'Ver productos en farmacia',
+      icon: FlaskConical,
+      href: '/dashboard/pharmacy/products',
+      color: 'bg-green-500',
+      module: 'pharmacy' as Module,
+      action: 'view' as Action,
+    },
+    {
+      title: 'Stock Bodega',
+      description: 'Ver productos en bodega',
+      icon: Warehouse,
+      href: '/dashboard/warehouse/products',
+      color: 'bg-emerald-500',
+      module: 'warehouse' as Module,
+      action: 'view' as Action,
     },
     {
       title: 'Proveedores',
@@ -127,41 +136,46 @@ export default async function DashboardPage() {
 
   const allModules: SystemModule[] = [
     {
-      title: 'Catálogo',
-      module: 'products',
-      items: [
-        {
-          label: 'Productos',
-          href: '/dashboard/products',
-          count: stats.totalProducts,
-          module: 'products',
-        },
-        {
-          label: 'Categorías',
-          href: '/dashboard/categories',
-          module: 'categories',
-        },
-        {
-          label: 'Próximos a vencer',
-          href: '/dashboard/productos/vencimiento',
-          module: 'products',
-        },
-      ],
-    },
-    {
       title: 'Farmacia',
       module: 'pharmacy',
       items: [
         {
           label: 'Dispensación',
-          href: '/dashboard/farmacia/despachos',
+          href: '/dashboard/pharmacy/dispensations',
           highlight: true,
           module: 'pharmacy',
         },
         {
-          label: 'Stock',
-          href: '/dashboard/farmacia/stock',
+          label: 'Productos',
+          href: '/dashboard/pharmacy/products',
           module: 'pharmacy',
+        },
+        {
+          label: 'Próximos a vencer',
+          href: '/dashboard/pharmacy/expiring',
+          module: 'pharmacy',
+        },
+      ],
+    },
+    {
+      title: 'Bodega',
+      module: 'warehouse',
+      items: [
+        {
+          label: 'Dispensación',
+          href: '/dashboard/warehouse/dispensations',
+          highlight: true,
+          module: 'warehouse',
+        },
+        {
+          label: 'Productos',
+          href: '/dashboard/warehouse/products',
+          module: 'warehouse',
+        },
+        {
+          label: 'Próximos a vencer',
+          href: '/dashboard/warehouse/expiring',
+          module: 'warehouse',
         },
       ],
     },
@@ -171,6 +185,7 @@ export default async function DashboardPage() {
       items: [
         { label: 'Usuarios', href: '/dashboard/users', module: 'users' },
         { label: 'Proveedores', href: '/dashboard/providers', module: 'providers' },
+        { label: 'Categorías', href: '/dashboard/categories', module: 'categories' },
       ],
     },
   ];
@@ -195,16 +210,6 @@ export default async function DashboardPage() {
             Bienvenido al Sistema de Inventario - La Gracia
           </p>
         </div>
-        {can('pharmacy') && (
-          <div className="flex gap-2">
-            <Button asChild>
-              <Link href="/dashboard/farmacia/despachos">
-                <FlaskConical className="h-4 w-4 mr-2" />
-                Ir a Dispensación
-              </Link>
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* Estadísticas rápidas - solo si puede ver productos */}
