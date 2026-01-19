@@ -48,8 +48,6 @@ export async function getProductsAction(
     const queryString = params.toString();
     const url = `${API_URL}/products${queryString ? `?${queryString}` : ''}`;
 
-    console.log('Fetching products with URL:', url);
-
     const response = await fetch(url, {
       method: 'GET',
       headers: {
