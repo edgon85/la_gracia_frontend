@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Loader2, Search, Package, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Loader2, Search, Package, CheckCircle2, AlertCircle, Plus } from 'lucide-react';
 import {
   getProductsAction,
   createProductAction,
@@ -28,6 +28,8 @@ import {
 } from '@/actions/product.actions';
 import { getCategoriesAction } from '@/actions/category.actions';
 import { getProvidersAction } from '@/actions/provider.actions';
+import { QuickAddCategoryModal } from './QuickAddCategoryModal';
+import { QuickAddProviderModal } from './QuickAddProviderModal';
 import {
   ProductPresentation,
   UnitOfMeasure,
@@ -138,6 +140,8 @@ export function AddProductOrBatch({ location }: AddProductOrBatchProps) {
   const [categories, setCategories] = useState<ICategory[]>([]);
   const [providers, setProviders] = useState<IProvider[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+  const [isAddProviderOpen, setIsAddProviderOpen] = useState(false);
 
   const debouncedSearchCode = useDebounce(searchCode, 500);
   const backendLocation = location.toUpperCase() as 'FARMACIA' | 'BODEGA';
@@ -307,8 +311,7 @@ export function AddProductOrBatch({ location }: AddProductOrBatchProps) {
           manufacturingDate: data.manufacturingDate,
           quantity: data.quantity,
           purchasePrice: data.purchasePrice,
-          salePrice: data.salePrice,
-          location: backendLocation,
+          salePrice: data.salePrice
         },
       });
 
@@ -428,12 +431,12 @@ export function AddProductOrBatch({ location }: AddProductOrBatchProps) {
                 <h2 className="text-lg font-semibold">
                   Paso 2: Agregar Lote a {existingProduct.commercialName}
                 </h2>
-                <p className="text-sm text-muted-foreground">
+                <span className="text-sm text-muted-foreground">
                   Completa la información del nuevo lote para{' '}
                   <Badge variant="outline" className="ml-1">
                     {location === 'farmacia' ? 'Farmacia' : 'Bodega'}
                   </Badge>
-                </p>
+                </span>
               </div>
 
               <Separator />
@@ -722,42 +725,74 @@ export function AddProductOrBatch({ location }: AddProductOrBatchProps) {
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="product-categoryId">Categoría *</Label>
-                    <select
-                      id="product-categoryId"
-                      {...productForm.register('categoryId')}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="">Seleccionar</option>
-                      {categories.map((cat) => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex gap-2">
+                      <select
+                        id="product-categoryId"
+                        {...productForm.register('categoryId')}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        <option value="">Seleccionar</option>
+                        {categories.map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setIsAddCategoryOpen(true)}
+                        title="Agregar nueva categoría"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
                     {productForm.formState.errors.categoryId && (
                       <p className="text-sm text-destructive">
                         {productForm.formState.errors.categoryId.message}
+                      </p>
+                    )}
+                    {categories.length === 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        No hay categorías. Haz clic en + para crear una.
                       </p>
                     )}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="product-providerId">Proveedor *</Label>
-                    <select
-                      id="product-providerId"
-                      {...productForm.register('providerId')}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="">Seleccionar</option>
-                      {providers.map((prov) => (
-                        <option key={prov.id} value={prov.id}>
-                          {prov.name}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex gap-2">
+                      <select
+                        id="product-providerId"
+                        {...productForm.register('providerId')}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        <option value="">Seleccionar</option>
+                        {providers.map((prov) => (
+                          <option key={prov.id} value={prov.id}>
+                            {prov.name}
+                          </option>
+                        ))}
+                      </select>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setIsAddProviderOpen(true)}
+                        title="Agregar nuevo proveedor"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
                     {productForm.formState.errors.providerId && (
                       <p className="text-sm text-destructive">
                         {productForm.formState.errors.providerId.message}
+                      </p>
+                    )}
+                    {providers.length === 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        No hay proveedores. Haz clic en + para crear uno.
                       </p>
                     )}
                   </div>
@@ -879,6 +914,23 @@ export function AddProductOrBatch({ location }: AddProductOrBatchProps) {
           )}
         </Card>
       )}
+
+      {/* Modales para agregar rápido */}
+      <QuickAddCategoryModal
+        open={isAddCategoryOpen}
+        onOpenChange={setIsAddCategoryOpen}
+        onSuccess={(newCategory) => {
+          setCategories((prev) => [...prev, newCategory]);
+        }}
+      />
+
+      <QuickAddProviderModal
+        open={isAddProviderOpen}
+        onOpenChange={setIsAddProviderOpen}
+        onSuccess={(newProvider) => {
+          setProviders((prev) => [...prev, newProvider]);
+        }}
+      />
     </div>
   );
 }

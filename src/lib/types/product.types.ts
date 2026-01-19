@@ -223,7 +223,7 @@ export interface IInitialBatch {
   quantity: number;
   purchasePrice: number;
   salePrice: number;
-  location: 'FARMACIA' | 'BODEGA';
+  notes?: string;
 }
 
 export interface ICreateProductRequest {

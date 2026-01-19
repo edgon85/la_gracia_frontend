@@ -9,10 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, Trash2 } from 'lucide-react';
+import { Loader2, Trash2, Plus } from 'lucide-react';
 import { createProductAction, updateProductAction, deleteProductAction, toggleProductStatusAction } from '@/actions/product.actions';
 import { getCategoriesAction } from '@/actions/category.actions';
 import { getProvidersAction } from '@/actions/provider.actions';
+import { QuickAddCategoryModal } from './QuickAddCategoryModal';
+import { QuickAddProviderModal } from './QuickAddProviderModal';
 import {
   ProductPresentation,
   ProductLocation,
@@ -134,6 +136,8 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
   const [categories, setCategories] = useState<ICategory[]>([]);
   const [providers, setProviders] = useState<IProvider[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+  const [isAddProviderOpen, setIsAddProviderOpen] = useState(false);
   const { user } = useAuthStore();
 
   // Determine redirect path based on location
@@ -300,7 +304,6 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
             quantity: createData.quantity || 0,
             purchasePrice: createData.purchasePrice || 0,
             salePrice: createData.salePrice || 0,
-            location: createData.location as 'FARMACIA' | 'BODEGA',
           },
         });
 
@@ -521,24 +524,35 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
             <Label htmlFor="categoryId">
               Categoría <span className="text-destructive">*</span>
             </Label>
-            <select
-              id="categoryId"
-              {...register('categoryId')}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="">Seleccionar categoría</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+            <div className="flex gap-2">
+              <select
+                id="categoryId"
+                {...register('categoryId')}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">Seleccionar categoría</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setIsAddCategoryOpen(true)}
+                title="Agregar nueva categoría"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
             {errors.categoryId && (
               <p className="text-sm text-destructive">{errors.categoryId.message}</p>
             )}
             {categories.length === 0 && (
               <p className="text-xs text-muted-foreground">
-                No hay categorías activas disponibles
+                No hay categorías activas. Haz clic en + para crear una.
               </p>
             )}
           </div>
@@ -547,24 +561,35 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
             <Label htmlFor="providerId">
               Proveedor <span className="text-destructive">*</span>
             </Label>
-            <select
-              id="providerId"
-              {...register('providerId')}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="">Seleccionar proveedor</option>
-              {providers.map((provider) => (
-                <option key={provider.id} value={provider.id}>
-                  {provider.name}
-                </option>
-              ))}
-            </select>
+            <div className="flex gap-2">
+              <select
+                id="providerId"
+                {...register('providerId')}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">Seleccionar proveedor</option>
+                {providers.map((provider) => (
+                  <option key={provider.id} value={provider.id}>
+                    {provider.name}
+                  </option>
+                ))}
+              </select>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setIsAddProviderOpen(true)}
+                title="Agregar nuevo proveedor"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
             {errors.providerId && (
               <p className="text-sm text-destructive">{errors.providerId.message}</p>
             )}
             {providers.length === 0 && (
               <p className="text-xs text-muted-foreground">
-                No hay proveedores activos disponibles
+                No hay proveedores activos. Haz clic en + para crear uno.
               </p>
             )}
           </div>
@@ -750,6 +775,23 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
           {isEditing ? 'Guardar Cambios' : 'Crear Producto'}
         </Button>
       </div>
+
+      {/* Modales para agregar rápido */}
+      <QuickAddCategoryModal
+        open={isAddCategoryOpen}
+        onOpenChange={setIsAddCategoryOpen}
+        onSuccess={(newCategory) => {
+          setCategories((prev) => [...prev, newCategory]);
+        }}
+      />
+
+      <QuickAddProviderModal
+        open={isAddProviderOpen}
+        onOpenChange={setIsAddProviderOpen}
+        onSuccess={(newProvider) => {
+          setProviders((prev) => [...prev, newProvider]);
+        }}
+      />
     </form>
   );
 }

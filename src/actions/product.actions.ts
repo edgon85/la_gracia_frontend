@@ -16,7 +16,7 @@ import { getToken } from './auth.actions';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 export async function getProductsAction(
-  filters: IProductFilters = {}
+  filters: IProductFilters = {},
 ): Promise<IProductsResponse | { error: string }> {
   try {
     const token = await getToken();
@@ -49,6 +49,7 @@ export async function getProductsAction(
     const url = `${API_URL}/products${queryString ? `?${queryString}` : ''}`;
 
     console.log('Fetching products with URL:', url);
+
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -76,7 +77,7 @@ export async function getProductsAction(
 }
 
 export async function createProductAction(
-  data: ICreateProductRequest
+  data: ICreateProductRequest,
 ): Promise<{ success: true; product: IProduct } | { error: string }> {
   try {
     const token = await getToken();
@@ -113,7 +114,7 @@ export async function createProductAction(
 }
 
 export async function getProductByIdAction(
-  id: string
+  id: string,
 ): Promise<IProduct | { error: string }> {
   try {
     const token = await getToken();
@@ -150,7 +151,7 @@ export async function getProductByIdAction(
 
 export async function updateProductAction(
   id: string,
-  data: IUpdateProductRequest
+  data: IUpdateProductRequest,
 ): Promise<{ success: true; product: IProduct } | { error: string }> {
   try {
     const token = await getToken();
@@ -187,7 +188,7 @@ export async function updateProductAction(
 }
 
 export async function toggleProductStatusAction(
-  id: string
+  id: string,
 ): Promise<{ success: true; product: IProduct } | { error: string }> {
   try {
     const token = await getToken();
@@ -223,7 +224,7 @@ export async function toggleProductStatusAction(
 }
 
 export async function deleteProductAction(
-  id: string
+  id: string,
 ): Promise<{ success: true } | { error: string }> {
   try {
     const token = await getToken();
@@ -259,7 +260,7 @@ export async function deleteProductAction(
 
 export async function addBatchToProductAction(
   productId: string,
-  data: ICreateBatchRequest
+  data: ICreateBatchRequest,
 ): Promise<{ success: true; batch: IBatch } | { error: string }> {
   try {
     const token = await getToken();
@@ -343,7 +344,7 @@ export async function getProductStatsAction(): Promise<
  */
 export async function getExpiringBatchesAction(
   days: number = 30,
-  location?: 'farmacia' | 'bodega'
+  location?: 'farmacia' | 'bodega',
 ): Promise<IExpiringBatch[] | { error: string }> {
   try {
     const token = await getToken();
@@ -365,7 +366,7 @@ export async function getExpiringBatchesAction(
           Authorization: `Bearer ${token}`,
         },
         cache: 'no-store',
-      }
+      },
     );
 
     if (!response.ok) {
