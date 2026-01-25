@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { IProvider, IProviderContact, ContactDepartment } from '@/lib';
+import { IProvider, IProviderContact } from '@/lib';
 import {
   Dialog,
   DialogContent,
@@ -20,12 +20,10 @@ import {
   FileText,
   Calendar,
   Hash,
-  Users,
+  FlaskConical,
   Plus,
-  Star,
-  Briefcase,
 } from 'lucide-react';
-import { AddContactModal } from './AddContactModal';
+import { AddLaboratoryModal } from './AddLaboratoryModal';
 
 interface ProviderDetailModalProps {
   provider: IProvider | null;
@@ -33,22 +31,6 @@ interface ProviderDetailModalProps {
   onOpenChange: (open: boolean) => void;
   onContactAdded?: () => void;
 }
-
-const departmentLabels: Record<ContactDepartment, string> = {
-  farmacia: 'Farmacia',
-  bodega: 'Bodega',
-  general: 'General',
-  ventas: 'Ventas',
-  cobranza: 'Cobranza',
-};
-
-const departmentColors: Record<ContactDepartment, string> = {
-  farmacia: 'bg-blue-500',
-  bodega: 'bg-amber-500',
-  general: 'bg-gray-500',
-  ventas: 'bg-green-500',
-  cobranza: 'bg-purple-500',
-};
 
 export function ProviderDetailModal({
   provider,
@@ -68,8 +50,8 @@ export function ProviderDetailModal({
     });
   };
 
-  const contacts = provider.contacts || [];
-  const activeContacts = contacts.filter((c) => c.isActive);
+  const laboratories = provider.contacts || [];
+  const activeLaboratories = laboratories.filter((c) => c.isActive);
 
   return (
     <>
@@ -118,7 +100,9 @@ export function ProviderDetailModal({
                     <User className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <div>
-                    <span className="text-muted-foreground text-xs">Persona de Contacto</span>
+                    <span className="text-muted-foreground text-xs">
+                      Persona de Contacto
+                    </span>
                     <p className="font-medium">{provider.contactPerson}</p>
                   </div>
                 </div>
@@ -129,7 +113,9 @@ export function ProviderDetailModal({
                       <Phone className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <div>
-                      <span className="text-muted-foreground text-xs">Teléfono</span>
+                      <span className="text-muted-foreground text-xs">
+                        Teléfono
+                      </span>
                       <p className="font-medium">{provider.phone}</p>
                     </div>
                   </div>
@@ -139,7 +125,9 @@ export function ProviderDetailModal({
                       <Mail className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <div>
-                      <span className="text-muted-foreground text-xs">Correo Electrónico</span>
+                      <span className="text-muted-foreground text-xs">
+                        Correo Electrónico
+                      </span>
                       <p className="font-medium">{provider.email}</p>
                     </div>
                   </div>
@@ -149,12 +137,12 @@ export function ProviderDetailModal({
 
             <Separator />
 
-            {/* Contactos Adicionales */}
+            {/* Laboratorios */}
             <section>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Contactos ({activeContacts.length})
+                  <FlaskConical className="h-4 w-4" />
+                  Laboratorios ({activeLaboratories.length})
                 </h3>
                 <Button size="sm" onClick={() => setIsAddContactOpen(true)}>
                   <Plus className="h-4 w-4 mr-1" />
@@ -162,17 +150,22 @@ export function ProviderDetailModal({
                 </Button>
               </div>
 
-              {activeContacts.length > 0 ? (
+              {activeLaboratories.length > 0 ? (
                 <div className="space-y-3">
-                  {activeContacts.map((contact) => (
-                    <ContactCard key={contact.id} contact={contact} />
+                  {activeLaboratories.map((laboratory) => (
+                    <LaboratoryCard
+                      key={laboratory.id}
+                      laboratory={laboratory}
+                    />
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-6 text-muted-foreground text-sm bg-muted/30 rounded-lg">
-                  <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>No hay contactos adicionales registrados</p>
-                  <p className="text-xs mt-1">Haz clic en "Agregar" para crear uno</p>
+                  <FlaskConical className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>No hay laboratorios registrados</p>
+                  <p className="text-xs mt-1">
+                    Haz clic en "Agregar" para crear uno
+                  </p>
                 </div>
               )}
             </section>
@@ -216,11 +209,17 @@ export function ProviderDetailModal({
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="bg-muted/50 rounded-lg p-3">
                   <span className="text-muted-foreground text-xs">Creado</span>
-                  <p className="font-medium">{formatDate(provider.createdAt)}</p>
+                  <p className="font-medium">
+                    {formatDate(provider.createdAt)}
+                  </p>
                 </div>
                 <div className="bg-muted/50 rounded-lg p-3">
-                  <span className="text-muted-foreground text-xs">Última Actualización</span>
-                  <p className="font-medium">{formatDate(provider.updatedAt)}</p>
+                  <span className="text-muted-foreground text-xs">
+                    Última Actualización
+                  </span>
+                  <p className="font-medium">
+                    {formatDate(provider.updatedAt)}
+                  </p>
                 </div>
               </div>
             </section>
@@ -228,7 +227,7 @@ export function ProviderDetailModal({
         </DialogContent>
       </Dialog>
 
-      <AddContactModal
+      <AddLaboratoryModal
         providerId={provider.id}
         providerName={provider.name}
         open={isAddContactOpen}
@@ -239,49 +238,21 @@ export function ProviderDetailModal({
   );
 }
 
-function ContactCard({ contact }: { contact: IProviderContact }) {
+function LaboratoryCard({ laboratory }: { laboratory: IProviderContact }) {
   return (
     <div className="bg-muted/50 rounded-lg p-3 text-sm">
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <span className="font-medium">{contact.name}</span>
-          {contact.isMain && (
-            <Badge variant="outline" className="text-xs gap-1 border-yellow-500 text-yellow-600">
-              <Star className="h-3 w-3" />
-              Principal
-            </Badge>
-          )}
-        </div>
-        <Badge className={`${departmentColors[contact.department]} text-white text-xs`}>
-          {departmentLabels[contact.department]}
-        </Badge>
-      </div>
+      <div className="font-medium mb-2">{laboratory.name}</div>
 
-      {contact.position && (
-        <div className="flex items-center gap-1 text-muted-foreground text-xs mb-2">
-          <Briefcase className="h-3 w-3" />
-          {contact.position}
+      {laboratory.phone && (
+        <div className="flex items-center gap-1 text-xs mb-2">
+          <Phone className="h-3 w-3 text-muted-foreground" />
+          <span>{laboratory.phone}</span>
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-2 text-xs">
-        {contact.phone && (
-          <div className="flex items-center gap-1">
-            <Phone className="h-3 w-3 text-muted-foreground" />
-            <span>{contact.phone}</span>
-          </div>
-        )}
-        {contact.email && (
-          <div className="flex items-center gap-1">
-            <Mail className="h-3 w-3 text-muted-foreground" />
-            <span className="truncate">{contact.email}</span>
-          </div>
-        )}
-      </div>
-
-      {contact.notes && (
-        <p className="text-xs text-muted-foreground mt-2 italic">
-          {contact.notes}
+      {laboratory.notes && (
+        <p className="text-xs text-muted-foreground italic">
+          {laboratory.notes}
         </p>
       )}
     </div>

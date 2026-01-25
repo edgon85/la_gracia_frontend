@@ -8,9 +8,8 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, Trash2, Users, Plus, Star, Phone, Mail, Briefcase, X } from 'lucide-react';
+import { Loader2, Trash2, FlaskConical, Plus, Phone, X } from 'lucide-react';
 import {
   createProviderAction,
   updateProviderAction,
@@ -18,12 +17,10 @@ import {
   toggleProviderStatusAction,
   getProviderContactsAction,
   deleteProviderContactAction,
-  toggleProviderContactStatusAction,
-  setMainProviderContactAction,
 } from '@/actions/provider.actions';
-import { IProvider, IProviderContact, ContactDepartment, Role } from '@/lib';
+import { IProvider, IProviderContact, Role } from '@/lib';
 import { useAuthStore } from '@/stores/auth.store';
-import { AddContactModal } from './AddContactModal';
+import { AddLaboratoryModal } from './AddLaboratoryModal';
 
 // Schema de validación
 const providerSchema = z.object({
@@ -31,7 +28,7 @@ const providerSchema = z.object({
   nit: z.string().min(1, 'El NIT es requerido'),
   address: z.string().min(1, 'La dirección es requerida'),
   phone: z.string().min(1, 'El teléfono es requerido'),
-  email: z.string().email('Email inválido').min(1, 'El email es requerido'),
+  email: z.string().email('Email inválido').optional().or(z.literal('')),
   contactPerson: z.string().min(1, 'La persona de contacto es requerida'),
   notes: z.string().optional(),
 });
@@ -43,23 +40,10 @@ interface ProviderFormProps {
   isEditing?: boolean;
 }
 
-const departmentLabels: Record<ContactDepartment, string> = {
-  farmacia: 'Farmacia',
-  bodega: 'Bodega',
-  general: 'General',
-  ventas: 'Ventas',
-  cobranza: 'Cobranza',
-};
-
-const departmentColors: Record<ContactDepartment, string> = {
-  farmacia: 'bg-blue-500',
-  bodega: 'bg-amber-500',
-  general: 'bg-gray-500',
-  ventas: 'bg-green-500',
-  cobranza: 'bg-purple-500',
-};
-
-export function ProviderForm({ provider, isEditing = false }: ProviderFormProps) {
+export function ProviderForm({
+  provider,
+  isEditing = false,
+}: ProviderFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -68,10 +52,17 @@ export function ProviderForm({ provider, isEditing = false }: ProviderFormProps)
   const [isActive, setIsActive] = useState(provider?.isActive ?? true);
   const { user } = useAuthStore();
 
-  // Estado para contactos
-  const [contacts, setContacts] = useState<IProviderContact[]>(provider?.contacts || []);
+  // Estado para laboratorios
+  const [contacts, setContacts] = useState<IProviderContact[]>(
+    provider?.contacts || [],
+  );
   const [isAddContactOpen, setIsAddContactOpen] = useState(false);
-  const [deletingContactId, setDeletingContactId] = useState<string | null>(null);
+  const [deletingContactId, setDeletingContactId] = useState<string | null>(
+    null,
+  );
+  const [confirmDeleteLabId, setConfirmDeleteLabId] = useState<string | null>(
+    null,
+  );
 
   const isAdmin = user?.roles?.includes(Role.ADMIN);
 
@@ -106,7 +97,7 @@ export function ProviderForm({ provider, isEditing = false }: ProviderFormProps)
         toast.success(
           response.provider.isActive
             ? 'Proveedor activado exitosamente'
-            : 'Proveedor desactivado exitosamente'
+            : 'Proveedor desactivado exitosamente',
         );
       }
     } catch (error) {
@@ -142,8 +133,13 @@ export function ProviderForm({ provider, isEditing = false }: ProviderFormProps)
   const onSubmit = async (data: ProviderFormData) => {
     setIsSubmitting(true);
     try {
+      const providerData = {
+        ...data,
+        email: data.email || undefined,
+      };
+
       if (isEditing && provider) {
-        const response = await updateProviderAction(provider.id, data);
+        const response = await updateProviderAction(provider.id, providerData);
 
         if ('error' in response) {
           toast.error(response.error);
@@ -152,7 +148,7 @@ export function ProviderForm({ provider, isEditing = false }: ProviderFormProps)
           router.push('/dashboard/providers');
         }
       } else {
-        const response = await createProviderAction(data);
+        const response = await createProviderAction(providerData);
 
         if ('error' in response) {
           toast.error(response.error);
@@ -162,7 +158,11 @@ export function ProviderForm({ provider, isEditing = false }: ProviderFormProps)
         }
       }
     } catch (error) {
-      toast.error(isEditing ? 'Error al actualizar el proveedor' : 'Error al crear el proveedor');
+      toast.error(
+        isEditing
+          ? 'Error al actualizar el proveedor'
+          : 'Error al crear el proveedor',
+      );
       console.error(error);
     } finally {
       setIsSubmitting(false);
@@ -188,23 +188,14 @@ export function ProviderForm({ provider, isEditing = false }: ProviderFormProps)
     if ('error' in response) {
       toast.error(response.error);
     } else {
-      toast.success('Contacto eliminado');
+      toast.success('Laboratorio eliminado');
       setContacts(contacts.filter((c) => c.id !== contactId));
     }
     setDeletingContactId(null);
+    setConfirmDeleteLabId(null);
   };
 
-  const handleSetMainContact = async (contactId: string) => {
-    const response = await setMainProviderContactAction(contactId);
-    if ('error' in response) {
-      toast.error(response.error);
-    } else {
-      toast.success('Contacto establecido como principal');
-      fetchContacts();
-    }
-  };
-
-  const activeContacts = contacts.filter((c) => c.isActive);
+  const activeLaboratories = contacts.filter((c) => c.isActive);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
@@ -230,11 +221,7 @@ export function ProviderForm({ provider, isEditing = false }: ProviderFormProps)
             <Label htmlFor="nit">
               NIT <span className="text-destructive">*</span>
             </Label>
-            <Input
-              id="nit"
-              {...register('nit')}
-              placeholder="1234567-8"
-            />
+            <Input id="nit" {...register('nit')} placeholder="1234567-8" />
             {errors.nit && (
               <p className="text-sm text-destructive">{errors.nit.message}</p>
             )}
@@ -250,7 +237,9 @@ export function ProviderForm({ provider, isEditing = false }: ProviderFormProps)
               placeholder="6ta Avenida 13-54 zona 9, Guatemala"
             />
             {errors.address && (
-              <p className="text-sm text-destructive">{errors.address.message}</p>
+              <p className="text-sm text-destructive">
+                {errors.address.message}
+              </p>
             )}
           </div>
         </div>
@@ -264,29 +253,23 @@ export function ProviderForm({ provider, isEditing = false }: ProviderFormProps)
             <Label htmlFor="phone">
               Teléfono <span className="text-destructive">*</span>
             </Label>
-            <Input
-              id="phone"
-              {...register('phone')}
-              placeholder="2232-1235"
-            />
+            <Input id="phone" {...register('phone')} placeholder="2232-1235" />
             {errors.phone && (
               <p className="text-sm text-destructive">{errors.phone.message}</p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">
-              Email <span className="text-destructive">*</span>
-            </Label>
+            <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
-              {...register('email')}
+              {...register('email', { required: false })}
               placeholder="ventas@proveedor.com"
             />
-            {errors.email && (
+            {/* {errors.email && (
               <p className="text-sm text-destructive">{errors.email.message}</p>
-            )}
+            )} */}
           </div>
 
           <div className="col-span-2 space-y-2">
@@ -299,7 +282,9 @@ export function ProviderForm({ provider, isEditing = false }: ProviderFormProps)
               placeholder="Carlos Rodríguez"
             />
             {errors.contactPerson && (
-              <p className="text-sm text-destructive">{errors.contactPerson.message}</p>
+              <p className="text-sm text-destructive">
+                {errors.contactPerson.message}
+              </p>
             )}
           </div>
         </div>
@@ -322,105 +307,99 @@ export function ProviderForm({ provider, isEditing = false }: ProviderFormProps)
         </div>
       </div>
 
-      {/* Contactos - Solo en modo edición */}
+      {/* Laboratorios - Solo en modo edición */}
       {isEditing && provider && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Contactos ({activeContacts.length})
+              <FlaskConical className="h-5 w-5" />
+              Laboratorios ({activeLaboratories.length})
             </h2>
-            <Button type="button" size="sm" onClick={() => setIsAddContactOpen(true)}>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => setIsAddContactOpen(true)}
+            >
               <Plus className="h-4 w-4 mr-1" />
-              Agregar Contacto
+              Agregar Laboratorio
             </Button>
           </div>
 
-          {activeContacts.length > 0 ? (
+          {activeLaboratories.length > 0 ? (
             <div className="grid gap-3 md:grid-cols-2">
-              {activeContacts.map((contact) => (
+              {activeLaboratories.map((laboratory) => (
                 <div
-                  key={contact.id}
+                  key={laboratory.id}
                   className="bg-muted/50 rounded-lg p-4 text-sm relative"
                 >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{contact.name}</span>
-                      {contact.isMain && (
-                        <Badge variant="outline" className="text-xs gap-1 border-yellow-500 text-yellow-600">
-                          <Star className="h-3 w-3" />
-                          Principal
-                        </Badge>
-                      )}
+                  {confirmDeleteLabId === laboratory.id ? (
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium">
+                        ¿Eliminar "{laboratory.name}"?
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteContact(laboratory.id)}
+                          disabled={deletingContactId === laboratory.id}
+                        >
+                          {deletingContactId === laboratory.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                          ) : null}
+                          Eliminar
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setConfirmDeleteLabId(null)}
+                          disabled={deletingContactId === laboratory.id}
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Badge className={`${departmentColors[contact.department]} text-white text-xs`}>
-                        {departmentLabels[contact.department]}
-                      </Badge>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                        onClick={() => handleDeleteContact(contact.id)}
-                        disabled={deletingContactId === contact.id}
-                      >
-                        {deletingContactId === contact.id ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
+                  ) : (
+                    <>
+                      <div className="flex items-start justify-between mb-2">
+                        <span className="font-medium">{laboratory.name}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                          onClick={() => setConfirmDeleteLabId(laboratory.id)}
+                        >
                           <X className="h-3 w-3" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-
-                  {contact.position && (
-                    <div className="flex items-center gap-1 text-muted-foreground text-xs mb-2">
-                      <Briefcase className="h-3 w-3" />
-                      {contact.position}
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    {contact.phone && (
-                      <div className="flex items-center gap-1">
-                        <Phone className="h-3 w-3 text-muted-foreground" />
-                        <span>{contact.phone}</span>
+                        </Button>
                       </div>
-                    )}
-                    {contact.email && (
-                      <div className="flex items-center gap-1">
-                        <Mail className="h-3 w-3 text-muted-foreground" />
-                        <span className="truncate">{contact.email}</span>
-                      </div>
-                    )}
-                  </div>
 
-                  {contact.notes && (
-                    <p className="text-xs text-muted-foreground mt-2 italic">
-                      {contact.notes}
-                    </p>
-                  )}
+                      {laboratory.phone && (
+                        <div className="flex items-center gap-1 text-xs mb-2">
+                          <Phone className="h-3 w-3 text-muted-foreground" />
+                          <span>{laboratory.phone}</span>
+                        </div>
+                      )}
 
-                  {!contact.isMain && (
-                    <Button
-                      type="button"
-                      variant="link"
-                      size="sm"
-                      className="text-xs p-0 h-auto mt-2"
-                      onClick={() => handleSetMainContact(contact.id)}
-                    >
-                      Establecer como principal
-                    </Button>
+                      {laboratory.notes && (
+                        <p className="text-xs text-muted-foreground italic">
+                          {laboratory.notes}
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
               ))}
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground text-sm bg-muted/30 rounded-lg">
-              <Users className="h-10 w-10 mx-auto mb-3 opacity-50" />
-              <p>No hay contactos adicionales registrados</p>
-              <p className="text-xs mt-1">Haz clic en "Agregar Contacto" para crear uno</p>
+              <FlaskConical className="h-10 w-10 mx-auto mb-3 opacity-50" />
+              <p>No hay laboratorios registrados</p>
+              <p className="text-xs mt-1">
+                Haz clic en "Agregar Laboratorio" para crear uno
+              </p>
             </div>
           )}
         </div>
@@ -445,14 +424,19 @@ export function ProviderForm({ provider, isEditing = false }: ProviderFormProps)
                 }`}
               />
             </button>
-            <Label className="cursor-pointer" onClick={!isTogglingStatus ? handleToggleStatus : undefined}>
+            <Label
+              className="cursor-pointer"
+              onClick={!isTogglingStatus ? handleToggleStatus : undefined}
+            >
               {isTogglingStatus ? (
                 <span className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Cambiando...
                 </span>
+              ) : isActive ? (
+                'Activo'
               ) : (
-                isActive ? 'Activo' : 'Inactivo'
+                'Inactivo'
               )}
             </Label>
             <p className="text-sm text-muted-foreground">
@@ -467,20 +451,27 @@ export function ProviderForm({ provider, isEditing = false }: ProviderFormProps)
       {/* Zona de Peligro - Solo para admins en modo edición */}
       {isEditing && isAdmin && (
         <div className="space-y-4 rounded-lg border border-destructive/50 bg-destructive/5 p-4">
-          <h2 className="text-xl font-semibold text-destructive">Zona de Peligro</h2>
+          <h2 className="text-xl font-semibold text-destructive">
+            Zona de Peligro
+          </h2>
           <p className="text-sm text-muted-foreground">
-            Esta acción eliminará permanentemente el proveedor y no se puede deshacer.
+            Esta acción eliminará permanentemente el proveedor y no se puede
+            deshacer.
           </p>
           {showDeleteConfirm ? (
             <div className="flex items-center gap-4">
-              <p className="text-sm font-medium">¿Estás seguro de eliminar este proveedor?</p>
+              <p className="text-sm font-medium">
+                ¿Estás seguro de eliminar este proveedor?
+              </p>
               <Button
                 type="button"
                 variant="destructive"
                 onClick={handleDelete}
                 disabled={isDeleting}
               >
-                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isDeleting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 Sí, eliminar
               </Button>
               <Button
@@ -521,9 +512,9 @@ export function ProviderForm({ provider, isEditing = false }: ProviderFormProps)
         </Button>
       </div>
 
-      {/* Modal para agregar contacto */}
+      {/* Modal para agregar laboratorio */}
       {provider && (
-        <AddContactModal
+        <AddLaboratoryModal
           providerId={provider.id}
           providerName={provider.name}
           open={isAddContactOpen}

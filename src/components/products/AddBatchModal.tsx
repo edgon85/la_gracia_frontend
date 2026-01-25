@@ -28,7 +28,7 @@ import { Loader2 } from 'lucide-react';
 const addBatchSchema = z.object({
   batchNumber: z.string().min(1, 'El número de lote es requerido'),
   expiryDate: z.string().min(1, 'La fecha de vencimiento es requerida'),
-  manufacturingDate: z.string().min(1, 'La fecha de fabricación es requerida'),
+  manufacturingDate: z.string().min(1, 'La fecha de ingreso es requerida'),
   quantity: z
     .string()
     .min(1, 'La cantidad es requerida')

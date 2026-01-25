@@ -24,7 +24,7 @@ export interface ICreateProviderRequest {
   nit: string;
   address: string;
   phone: string;
-  email: string;
+  email?: string;
   contactPerson: string;
   notes?: string;
 }

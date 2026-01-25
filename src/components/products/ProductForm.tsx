@@ -10,7 +10,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Loader2, Trash2, Plus } from 'lucide-react';
-import { createProductAction, updateProductAction, deleteProductAction, toggleProductStatusAction } from '@/actions/product.actions';
+import {
+  createProductAction,
+  updateProductAction,
+  deleteProductAction,
+  toggleProductStatusAction,
+} from '@/actions/product.actions';
 import { getCategoriesAction } from '@/actions/category.actions';
 import { getProvidersAction } from '@/actions/provider.actions';
 import { QuickAddCategoryModal } from './QuickAddCategoryModal';
@@ -126,7 +131,11 @@ interface ProductFormProps {
   defaultLocation?: 'farmacia' | 'bodega';
 }
 
-export function ProductForm({ product, isEditing = false, defaultLocation = 'bodega' }: ProductFormProps) {
+export function ProductForm({
+  product,
+  isEditing = false,
+  defaultLocation = 'bodega',
+}: ProductFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -143,7 +152,9 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
   // Determine redirect path based on location
   const getRedirectPath = (location?: string) => {
     const loc = location?.toUpperCase() || defaultLocation.toUpperCase();
-    return loc === 'FARMACIA' ? '/dashboard/pharmacy/products' : '/dashboard/warehouse/products';
+    return loc === 'FARMACIA'
+      ? '/dashboard/pharmacy/products'
+      : '/dashboard/warehouse/products';
   };
 
   const isAdmin = user?.roles?.includes(Role.ADMIN);
@@ -154,26 +165,29 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
     formState: { errors },
   } = useForm<ProductFormData>({
     resolver: zodResolver(isEditing ? editProductSchema : createProductSchema),
-    defaultValues: isEditing && product ? {
-      internalCode: product.internalCode,
-      commercialName: product.commercialName,
-      genericName: product.genericName,
-      presentation: product.presentation,
-      concentration: product.concentration,
-      unitOfMeasure: product.unitOfMeasure,
-      location: product.location,
-      minimumStock: product.minimumStock,
-      maximumStock: product.maximumStock,
-      categoryId: product.categoryId,
-      providerId: product.providerId,
-    } : {
-      minimumStock: 100,
-      maximumStock: 1000,
-      quantity: 1,
-      purchasePrice: 0,
-      salePrice: 0,
-      location: defaultLocation.toUpperCase(),
-    },
+    defaultValues:
+      isEditing && product
+        ? {
+            internalCode: product.internalCode,
+            commercialName: product.commercialName,
+            genericName: product.genericName,
+            presentation: product.presentation,
+            concentration: product.concentration,
+            unitOfMeasure: product.unitOfMeasure,
+            location: product.location,
+            minimumStock: product.minimumStock,
+            maximumStock: product.maximumStock,
+            categoryId: product.categoryId,
+            providerId: product.providerId,
+          }
+        : {
+            minimumStock: 100,
+            maximumStock: 1000,
+            quantity: 1,
+            purchasePrice: 0,
+            salePrice: 0,
+            location: defaultLocation.toUpperCase(),
+          },
   });
 
   // Cargar categorías y proveedores
@@ -187,7 +201,11 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
 
         if (!('error' in categoriesResponse)) {
           // Si estamos editando, incluir la categoría actual aunque esté inactiva
-          if (isEditing && product?.category && !categoriesResponse.data.find(c => c.id === product.categoryId)) {
+          if (
+            isEditing &&
+            product?.category &&
+            !categoriesResponse.data.find((c) => c.id === product.categoryId)
+          ) {
             setCategories([product.category, ...categoriesResponse.data]);
           } else {
             setCategories(categoriesResponse.data);
@@ -195,7 +213,11 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
         }
         if (!('error' in providersResponse)) {
           // Si estamos editando, incluir el proveedor actual aunque esté inactivo
-          if (isEditing && product?.provider && !providersResponse.data.find(p => p.id === product.providerId)) {
+          if (
+            isEditing &&
+            product?.provider &&
+            !providersResponse.data.find((p) => p.id === product.providerId)
+          ) {
             setProviders([product.provider, ...providersResponse.data]);
           } else {
             setProviders(providersResponse.data);
@@ -226,7 +248,7 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
         toast.success(
           response.product.isActive
             ? 'Producto activado exitosamente'
-            : 'Producto desactivado exitosamente'
+            : 'Producto desactivado exitosamente',
         );
       }
     } catch (error) {
@@ -315,7 +337,11 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
         }
       }
     } catch (error) {
-      toast.error(isEditing ? 'Error al actualizar el producto' : 'Error al crear el producto');
+      toast.error(
+        isEditing
+          ? 'Error al actualizar el producto'
+          : 'Error al crear el producto',
+      );
       console.error(error);
     } finally {
       setIsSubmitting(false);
@@ -341,7 +367,8 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
               {product.barcode}
             </div>
             <span className="text-sm text-muted-foreground">
-              El código de barras se genera automáticamente y no puede ser modificado
+              El código de barras se genera automáticamente y no puede ser
+              modificado
             </span>
           </div>
         </div>
@@ -361,7 +388,9 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
               placeholder="MED-001"
             />
             {errors.internalCode && (
-              <p className="text-sm text-destructive">{errors.internalCode.message}</p>
+              <p className="text-sm text-destructive">
+                {errors.internalCode.message}
+              </p>
             )}
           </div>
 
@@ -375,7 +404,9 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
               placeholder="Paracetamol 500mg"
             />
             {errors.commercialName && (
-              <p className="text-sm text-destructive">{errors.commercialName.message}</p>
+              <p className="text-sm text-destructive">
+                {errors.commercialName.message}
+              </p>
             )}
           </div>
 
@@ -389,7 +420,9 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
               placeholder="Acetaminofén"
             />
             {errors.genericName && (
-              <p className="text-sm text-destructive">{errors.genericName.message}</p>
+              <p className="text-sm text-destructive">
+                {errors.genericName.message}
+              </p>
             )}
           </div>
         </div>
@@ -416,7 +449,9 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
               ))}
             </select>
             {errors.presentation && (
-              <p className="text-sm text-destructive">{errors.presentation.message}</p>
+              <p className="text-sm text-destructive">
+                {errors.presentation.message}
+              </p>
             )}
           </div>
 
@@ -430,7 +465,9 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
               placeholder="500"
             />
             {errors.concentration && (
-              <p className="text-sm text-destructive">{errors.concentration.message}</p>
+              <p className="text-sm text-destructive">
+                {errors.concentration.message}
+              </p>
             )}
           </div>
 
@@ -451,7 +488,9 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
               ))}
             </select>
             {errors.unitOfMeasure && (
-              <p className="text-sm text-destructive">{errors.unitOfMeasure.message}</p>
+              <p className="text-sm text-destructive">
+                {errors.unitOfMeasure.message}
+              </p>
             )}
           </div>
         </div>
@@ -478,7 +517,9 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
               ))}
             </select>
             {errors.location && (
-              <p className="text-sm text-destructive">{errors.location.message}</p>
+              <p className="text-sm text-destructive">
+                {errors.location.message}
+              </p>
             )}
           </div>
 
@@ -494,7 +535,9 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
               min="0"
             />
             {errors.minimumStock && (
-              <p className="text-sm text-destructive">{errors.minimumStock.message}</p>
+              <p className="text-sm text-destructive">
+                {errors.minimumStock.message}
+              </p>
             )}
           </div>
 
@@ -510,7 +553,9 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
               min="0"
             />
             {errors.maximumStock && (
-              <p className="text-sm text-destructive">{errors.maximumStock.message}</p>
+              <p className="text-sm text-destructive">
+                {errors.maximumStock.message}
+              </p>
             )}
           </div>
         </div>
@@ -533,7 +578,7 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
                 <option value="">Seleccionar categoría</option>
                 {categories.map((category) => (
                   <option key={category.id} value={category.id}>
-                    {category.name}
+                    {category.code} - {category.name}
                   </option>
                 ))}
               </select>
@@ -548,7 +593,9 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
               </Button>
             </div>
             {errors.categoryId && (
-              <p className="text-sm text-destructive">{errors.categoryId.message}</p>
+              <p className="text-sm text-destructive">
+                {errors.categoryId.message}
+              </p>
             )}
             {categories.length === 0 && (
               <p className="text-xs text-muted-foreground">
@@ -585,7 +632,9 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
               </Button>
             </div>
             {errors.providerId && (
-              <p className="text-sm text-destructive">{errors.providerId.message}</p>
+              <p className="text-sm text-destructive">
+                {errors.providerId.message}
+              </p>
             )}
             {providers.length === 0 && (
               <p className="text-xs text-muted-foreground">
@@ -617,7 +666,7 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
 
             <div className="space-y-2">
               <Label htmlFor="manufacturingDate">
-                Fecha de Fabricación <span className="text-destructive">*</span>
+                Fecha de Ingreso <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="manufacturingDate"
@@ -644,7 +693,9 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
               <Input
                 id="quantity"
                 type="number"
-                {...register('quantity' as keyof ProductFormData, { valueAsNumber: true })}
+                {...register('quantity' as keyof ProductFormData, {
+                  valueAsNumber: true,
+                })}
                 placeholder="500"
                 min="1"
               />
@@ -658,7 +709,9 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
                 id="purchasePrice"
                 type="number"
                 step="0.01"
-                {...register('purchasePrice' as keyof ProductFormData, { valueAsNumber: true })}
+                {...register('purchasePrice' as keyof ProductFormData, {
+                  valueAsNumber: true,
+                })}
                 placeholder="2.50"
                 min="0"
               />
@@ -672,7 +725,9 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
                 id="salePrice"
                 type="number"
                 step="0.01"
-                {...register('salePrice' as keyof ProductFormData, { valueAsNumber: true })}
+                {...register('salePrice' as keyof ProductFormData, {
+                  valueAsNumber: true,
+                })}
                 placeholder="5.00"
                 min="0"
               />
@@ -700,14 +755,19 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
                 }`}
               />
             </button>
-            <span className="cursor-pointer" onClick={!isTogglingStatus ? handleToggleStatus : undefined}>
+            <span
+              className="cursor-pointer"
+              onClick={!isTogglingStatus ? handleToggleStatus : undefined}
+            >
               {isTogglingStatus ? (
                 <span className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Cambiando...
                 </span>
+              ) : isActive ? (
+                'Activo'
               ) : (
-                isActive ? 'Activo' : 'Inactivo'
+                'Inactivo'
               )}
             </span>
             <span className="text-sm text-muted-foreground">
@@ -722,20 +782,27 @@ export function ProductForm({ product, isEditing = false, defaultLocation = 'bod
       {/* Zona de Peligro - Solo para admins en modo edición */}
       {isEditing && isAdmin && (
         <div className="space-y-4 rounded-lg border border-destructive/50 bg-destructive/5 p-4">
-          <h2 className="text-xl font-semibold text-destructive">Zona de Peligro</h2>
+          <h2 className="text-xl font-semibold text-destructive">
+            Zona de Peligro
+          </h2>
           <p className="text-sm text-muted-foreground">
-            Esta acción eliminará permanentemente el producto y no se puede deshacer.
+            Esta acción eliminará permanentemente el producto y no se puede
+            deshacer.
           </p>
           {showDeleteConfirm ? (
             <div className="flex items-center gap-4">
-              <p className="text-sm font-medium">¿Estás seguro de eliminar este producto?</p>
+              <p className="text-sm font-medium">
+                ¿Estás seguro de eliminar este producto?
+              </p>
               <Button
                 type="button"
                 variant="destructive"
                 onClick={handleDelete}
                 disabled={isDeleting}
               >
-                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isDeleting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 Sí, eliminar
               </Button>
               <Button
