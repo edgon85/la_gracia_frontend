@@ -92,9 +92,37 @@ export function ProductsPage({
     setCurrentPage(1); // Reset to first page when filters change
   };
 
-  const handleResetFilters = () => {
+  const handleResetFilters = async () => {
     setFilters({});
     setCurrentPage(1);
+    // Forzar recarga de datos con filtros vacíos
+    setLoading(true);
+    try {
+      const productFilters: IProductFilters = {
+        page: 1,
+        limit: itemsPerPage,
+        sortBy: sortField,
+        ...(location && { location: toBackendLocation(location) }),
+      };
+
+      const response = await getProductsAction(productFilters);
+
+      if ('error' in response) {
+        toast.error(response.error);
+        setProducts([]);
+        setTotalPages(1);
+        setTotalItems(0);
+      } else {
+        setProducts(response.data);
+        setTotalPages(response.meta.totalPages);
+        setTotalItems(response.meta.total);
+      }
+    } catch (error) {
+      toast.error('Error al cargar los productos');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSort = (field: string) => {

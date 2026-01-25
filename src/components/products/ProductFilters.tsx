@@ -46,7 +46,24 @@ export function ProductFilters({ onFilterChange, onReset }: ProductFiltersProps)
   const handleSearchChange = (value: string) => {
     setSearch(value);
     // Auto-aplicar búsqueda mientras el usuario escribe
-    onFilterChange({ search: value, minPrice: minPrice ? parseFloat(minPrice) : undefined, maxPrice: maxPrice ? parseFloat(maxPrice) : undefined, isActive });
+    onFilterChange({
+      search: value,
+      minPrice: minPrice ? parseFloat(minPrice) : undefined,
+      maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+      isActive,
+    });
+  };
+
+  const handleStatusChange = (value: string) => {
+    const newIsActive = value === 'all' ? undefined : value === 'active';
+    setIsActive(newIsActive);
+    // Auto-aplicar filtro de estado
+    onFilterChange({
+      search: search || undefined,
+      minPrice: minPrice ? parseFloat(minPrice) : undefined,
+      maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+      isActive: newIsActive,
+    });
   };
 
   return (
@@ -117,10 +134,7 @@ export function ProductFilters({ onFilterChange, onReset }: ProductFiltersProps)
                 id="status"
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={isActive === undefined ? 'all' : isActive ? 'active' : 'inactive'}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setIsActive(value === 'all' ? undefined : value === 'active');
-                }}
+                onChange={(e) => handleStatusChange(e.target.value)}
               >
                 <option value="all">Todos</option>
                 <option value="active">Activos</option>
