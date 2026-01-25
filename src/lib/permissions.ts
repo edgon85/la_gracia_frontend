@@ -112,6 +112,8 @@ export const ROUTE_TO_MODULE: Record<string, Module> = {
   '/dashboard/warehouse/products': 'warehouse',
   '/dashboard/warehouse/dispensations': 'warehouse',
   '/dashboard/warehouse/expiring': 'warehouse',
+  // Inventory
+  '/dashboard/inventario/movimientos': 'products',
   // Users
   '/dashboard/users': 'users',
   '/dashboard/users/new': 'users',
@@ -137,6 +139,8 @@ export const ROUTE_TO_ACTION: Record<string, Action> = {
   '/dashboard/warehouse/products': 'view',
   '/dashboard/warehouse/dispensations': 'view',
   '/dashboard/warehouse/expiring': 'view',
+  // Inventory
+  '/dashboard/inventario/movimientos': 'view',
   // Users
   '/dashboard/users': 'view',
   '/dashboard/users/new': 'create',

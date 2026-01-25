@@ -1,38 +1,65 @@
 import { IProduct, IBatch } from './product.types';
 
-export type MovementType = 'ENTRY' | 'EXIT' | 'ADJUSTMENT' | 'TRANSFER';
-
-export type MovementReason =
+// Tipos de movimiento específicos
+export type MovementType =
+  // Entradas
   | 'PURCHASE'
-  | 'SALE'
+  | 'RETURN_FROM_PATIENT'
+  | 'TRANSFER_IN'
+  | 'ADJUSTMENT_IN'
+  // Salidas
   | 'DISPENSATION'
-  | 'RETURN'
+  | 'SALE'
+  | 'TRANSFER_OUT'
+  | 'ADJUSTMENT_OUT'
   | 'EXPIRED'
   | 'DAMAGED'
-  | 'LOSS'
-  | 'ADJUSTMENT'
-  | 'TRANSFER_IN'
-  | 'TRANSFER_OUT'
-  | 'INITIAL_STOCK'
-  | 'OTHER';
+  | 'LOST';
+
+// Categoría del movimiento
+export type MovementCategory = 'ENTRY' | 'EXIT';
+
+// Labels para mostrar en UI
+export const MovementTypeLabels: Record<MovementType, string> = {
+  PURCHASE: 'Compra',
+  RETURN_FROM_PATIENT: 'Devolución de paciente',
+  TRANSFER_IN: 'Transferencia entrada',
+  ADJUSTMENT_IN: 'Ajuste entrada',
+  DISPENSATION: 'Dispensación',
+  SALE: 'Venta',
+  TRANSFER_OUT: 'Transferencia salida',
+  ADJUSTMENT_OUT: 'Ajuste salida',
+  EXPIRED: 'Vencido',
+  DAMAGED: 'Dañado',
+  LOST: 'Pérdida',
+};
+
+export const MovementCategoryLabels: Record<MovementCategory, string> = {
+  ENTRY: 'Entrada',
+  EXIT: 'Salida',
+};
 
 export interface IInventoryMovement {
   id: string;
   type: MovementType;
-  reason: MovementReason;
+  category: MovementCategory;
   quantity: number;
   previousStock: number;
   newStock: number;
-  notes: string | null;
+  reason: string | null;
   reference: string | null;
+  patientName: string | null;
+  patientId: string | null;
+  notes: string | null;
+  unitPrice: number | null;
+  totalPrice: number | null;
   productId: string;
   batchId: string;
-  userId: string;
+  createdById: string;
   createdAt: string;
-  updatedAt: string;
   product?: IProduct;
   batch?: IBatch;
-  user?: {
+  createdBy?: {
     id: string;
     firstName: string;
     lastName: string;
@@ -76,15 +103,17 @@ export interface ICreateExitResponse {
 
 export interface IMovementFilters {
   type?: MovementType;
-  reason?: MovementReason;
+  category?: MovementCategory;
   productId?: string;
   batchId?: string;
+  createdById?: string;
   startDate?: string;
   endDate?: string;
   page?: number;
   limit?: number;
   location?: 'FARMACIA' | 'BODEGA';
-  category?: 'ENTRY' | 'EXIT';
+  sortBy?: string;
+  order?: 'ASC' | 'DESC';
 }
 
 export interface IMovementsResponse {
@@ -98,15 +127,18 @@ export interface IMovementsResponse {
 }
 
 export interface IMovementSummary {
-  totalEntries: number;
-  totalExits: number;
-  totalAdjustments: number;
-  netChange: number;
-  byReason: {
-    reason: MovementReason;
+  totalMovements: number;
+  entries: {
     count: number;
     quantity: number;
-  }[];
+    value: number;
+  };
+  exits: {
+    count: number;
+    quantity: number;
+    value: number;
+  };
+  byType: Record<MovementType, { count: number; quantity: number }>;
 }
 
 // Para el carrito de dispensación
