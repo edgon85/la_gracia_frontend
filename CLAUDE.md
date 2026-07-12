@@ -4,13 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-"La Gracia Frontend" is a hospital management system built with Next.js 15 App Router, React 19, TypeScript, and Tailwind CSS v4. The application supports role-based access control for hospital staff (ADMIN, FARMACIA, BODEGA, MEDICO, ENFERMERO, AUDITOR).
+"La Gracia Frontend" is a hospital management system built with Next.js 16 App Router, React 19, TypeScript, and Tailwind CSS v4. The application supports role-based access control via the `Role` enum in [src/lib/types/auth.types.ts](src/lib/types/auth.types.ts): `ADMIN`, `PHARMACY`, `WAREHOUSE`, `DOCTOR`, `NURSE`, `AUDITOR`, `USER`.
 
 ## Development Commands
 
 - `pnpm dev` - Start development server at http://localhost:3000
 - `pnpm build` - Build production application
 - `pnpm start` - Start production server
+- `pnpm test` / `pnpm test:watch` - Run Jest test suite
 
 Package manager: **pnpm** (required)
 
@@ -25,8 +26,11 @@ The app uses a **hybrid client-server authentication architecture**:
    - Store JWT token in httpOnly cookie (secure, inaccessible to client JS)
    - Store user data in non-httpOnly cookie (readable by client)
    - `logoutAction()` - Clears cookies and redirects to `/login`
-   - `getCurrentUser()` - Server-side user retrieval from cookies
+   - `getCurrentUser()` / `getValidatedUser()` - Server-side user retrieval from cookies
    - `checkAuth()` / `getToken()` - Helper functions for protected routes
+   - `verifyTokenAction()` / `refreshTokenAction()` - Token validation/refresh
+   - `changePasswordAction()` / `changePasswordVoluntaryAction()` / `updateProfileAction()`
+   - `checkPermission()` / `checkRouteAccess()` / `getValidatedUserWithPermission()` - RBAC checks, backed by [src/lib/permissions.ts](src/lib/permissions.ts)
 
 2. **Zustand Store** ([src/stores/auth.store.ts](src/stores/auth.store.ts)) manages client state:
    - Does NOT make API calls directly
@@ -56,8 +60,14 @@ Uses **shadcn/ui** component library (configured in [components.json](components
   - Used via layout wrapper at [src/app/dashboard/layout.tsx](src/app/dashboard/layout.tsx)
 
 - **Route Groups**:
-  - `(auth)/` - Authentication pages (login, register)
-  - `dashboard/` - Protected application pages with DashboardLayout
+  - `(auth)/` - Authentication pages (`login`, `register`, `change-password`)
+  - `dashboard/` - Protected application pages with DashboardLayout. Modules: `categories`, `products`, `providers`, `users`, `profile`, `pharmacy` (`products`, `dispensations`, `expiring`), `warehouse` (`products`, `dispensations`, `expiring`)
+
+### Authorization / Permissions System
+
+- [src/lib/permissions.ts](src/lib/permissions.ts) defines module-level RBAC: `Module` (`dashboard`, `profile`, `products`, `categories`, `providers`, `pharmacy`, `warehouse`, `users`), `Action` (`view`, `create`, `edit`, `delete`), and `ROLE_PERMISSIONS: Record<UserRole, ModulePermissions>`.
+- `UserRole` string values (`'admin' | 'user' | 'pharmacy' | 'warehouse' | 'doctor' | 'nurse' | 'auditor'`) mirror the backend's `ValidRoles`, lowercase.
+- Use `checkPermission()` / `checkRouteAccess()` (in `auth.actions.ts`) to gate server-side access per module/action instead of ad-hoc role checks.
 
 ### Styling & Theming
 
@@ -91,12 +101,8 @@ import { z } from 'zod';
 
 ### Path Aliases
 
-Configure in both [tsconfig.json](tsconfig.json) and [components.json](components.json):
-- `@/*` → `./src/*`
-- `@/components` → `./src/components`
-- `@/lib` → `./src/lib`
-- `@/hooks` → `./src/hooks`
-- `@/ui` → `./src/components/ui`
+- `tsconfig.json` only declares the wildcard `@/*` → `./src/*`.
+- [components.json](components.json) additionally declares shadcn-facing aliases: `@/components`, `@/lib/utils`, `@/components/ui`, `@/lib`, `@/hooks`. These resolve through the `@/*` wildcard, not as separate tsconfig paths.
 
 ## Key Patterns
 
