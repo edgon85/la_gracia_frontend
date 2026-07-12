@@ -59,7 +59,6 @@ export const useAuthStore = create<IAuthState>((set) => ({
   checkAuth: () => {
     const user = getUserFromCookie();
 
-    console.log('Checking auth in store, user from cookie:', user);
     if (user) {
       set({
         user,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,16 +11,22 @@ import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Loader2, Search, Package, CheckCircle2, AlertCircle, Plus } from 'lucide-react';
+import {
+  Loader2,
+  Package,
+  Plus,
+  AlertTriangle,
+} from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   getProductsAction,
   createProductAction,
@@ -37,23 +43,6 @@ import {
   IProvider,
   IProduct,
 } from '@/lib';
-import { useDebounce } from '@/hooks/useDebounce';
-
-// Schema para buscar producto
-const searchSchema = z.object({
-  internalCode: z.string().min(1, 'El código interno es requerido'),
-});
-
-// Schema para agregar lote a producto existente
-const addBatchSchema = z.object({
-  batchNumber: z.string().min(1, 'El número de lote es requerido'),
-  expiryDate: z.string().min(1, 'La fecha de vencimiento es requerida'),
-  manufacturingDate: z.string().min(1, 'La fecha de fabricación es requerida'),
-  quantity: z.number().min(1, 'La cantidad debe ser mayor a 0'),
-  purchasePrice: z.number().min(0, 'El precio de compra debe ser mayor o igual a 0'),
-  salePrice: z.number().min(0, 'El precio de venta debe ser mayor o igual a 0'),
-  notes: z.string().optional(),
-});
 
 // Schema para crear producto nuevo
 const createProductSchema = z.object({
@@ -70,13 +59,13 @@ const createProductSchema = z.object({
   // Initial batch
   batchNumber: z.string().min(1, 'El número de lote es requerido'),
   expiryDate: z.string().min(1, 'La fecha de vencimiento es requerida'),
-  manufacturingDate: z.string().min(1, 'La fecha de fabricación es requerida'),
+  manufacturingDate: z.string().min(1, 'La fecha de ingreso'),
   quantity: z.number().min(1, 'La cantidad debe ser mayor a 0'),
   purchasePrice: z.number().min(0, 'El precio de compra debe ser mayor o igual a 0'),
   salePrice: z.number().min(0, 'El precio de venta debe ser mayor o igual a 0'),
+  notes: z.string().optional(),
 });
 
-type AddBatchFormData = z.infer<typeof addBatchSchema>;
 type CreateProductFormData = z.infer<typeof createProductSchema>;
 
 // Labels
@@ -132,40 +121,37 @@ interface AddProductOrBatchProps {
 
 export function AddProductOrBatch({ location }: AddProductOrBatchProps) {
   const router = useRouter();
-  const [searchCode, setSearchCode] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchPerformed, setSearchPerformed] = useState(false);
-  const [existingProduct, setExistingProduct] = useState<IProduct | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckingCode, setIsCheckingCode] = useState(false);
   const [categories, setCategories] = useState<ICategory[]>([]);
   const [providers, setProviders] = useState<IProvider[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
   const [isAddProviderOpen, setIsAddProviderOpen] = useState(false);
 
-  const debouncedSearchCode = useDebounce(searchCode, 500);
+  // Estado para el modal de producto existente
+  const [existingProductModal, setExistingProductModal] = useState<{
+    open: boolean;
+    product: IProduct | null;
+    formData: CreateProductFormData | null;
+  }>({
+    open: false,
+    product: null,
+    formData: null,
+  });
+
   const backendLocation = location.toUpperCase() as 'FARMACIA' | 'BODEGA';
 
   const redirectPath = location === 'farmacia'
     ? '/dashboard/pharmacy/products'
     : '/dashboard/warehouse/products';
 
-  // Form para agregar lote
-  const batchForm = useForm<AddBatchFormData>({
-    resolver: zodResolver(addBatchSchema),
-    defaultValues: {
-      batchNumber: '',
-      expiryDate: '',
-      manufacturingDate: '',
-      quantity: 1,
-      purchasePrice: 0,
-      salePrice: 0,
-      notes: '',
-    },
-  });
-
   // Form para crear producto
-  const productForm = useForm<CreateProductFormData>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<CreateProductFormData>({
     resolver: zodResolver(createProductSchema),
     defaultValues: {
       internalCode: '',
@@ -184,6 +170,7 @@ export function AddProductOrBatch({ location }: AddProductOrBatchProps) {
       quantity: 1,
       purchasePrice: 0,
       salePrice: 0,
+      notes: '',
     },
   });
 
@@ -213,15 +200,8 @@ export function AddProductOrBatch({ location }: AddProductOrBatchProps) {
     loadData();
   }, []);
 
-  // Buscar producto por código interno
-  const searchProduct = useCallback(async (code: string) => {
-    if (code.length < 2) {
-      setExistingProduct(null);
-      setSearchPerformed(false);
-      return;
-    }
-
-    setIsSearching(true);
+  // Verificar si el código ya existe
+  const checkCodeExists = async (code: string): Promise<IProduct | null> => {
     try {
       const response = await getProductsAction({
         search: code,
@@ -229,56 +209,40 @@ export function AddProductOrBatch({ location }: AddProductOrBatchProps) {
       });
 
       if (!('error' in response)) {
-        // Buscar coincidencia exacta por código interno
         const exactMatch = response.data.find(
           (p) => p.internalCode.toLowerCase() === code.toLowerCase()
         );
-
-        if (exactMatch) {
-          setExistingProduct(exactMatch);
-        } else {
-          setExistingProduct(null);
-        }
-      } else {
-        setExistingProduct(null);
+        return exactMatch || null;
       }
-      setSearchPerformed(true);
+      return null;
     } catch (error) {
-      console.error('Error searching product:', error);
-      setExistingProduct(null);
-      setSearchPerformed(true);
-    } finally {
-      setIsSearching(false);
+      console.error('Error checking code:', error);
+      return null;
     }
-  }, []);
+  };
 
-  // Buscar cuando cambie el código
-  useEffect(() => {
-    if (debouncedSearchCode) {
-      searchProduct(debouncedSearchCode);
-      // Actualizar el código en el form de crear producto
-      productForm.setValue('internalCode', debouncedSearchCode);
-    } else {
-      setExistingProduct(null);
-      setSearchPerformed(false);
-    }
-  }, [debouncedSearchCode, searchProduct, productForm]);
-
-  // Manejar agregar lote a producto existente
-  const onSubmitBatch = async (data: AddBatchFormData) => {
-    if (!existingProduct) return;
+  // Agregar lote a producto existente
+  const addBatchToExisting = async () => {
+    if (!existingProductModal.product || !existingProductModal.formData) return;
 
     setIsSubmitting(true);
     try {
-      const result = await addBatchToProductAction(existingProduct.id, {
-        ...data,
+      const data = existingProductModal.formData;
+      const result = await addBatchToProductAction(existingProductModal.product.id, {
+        batchNumber: data.batchNumber,
+        expiryDate: data.expiryDate,
+        manufacturingDate: data.manufacturingDate,
+        quantity: data.quantity,
+        purchasePrice: data.purchasePrice,
+        salePrice: data.salePrice,
+        notes: data.notes,
         location: backendLocation,
       });
 
       if ('error' in result) {
         toast.error(result.error);
       } else {
-        toast.success(`Lote agregado exitosamente a ${existingProduct.commercialName}`);
+        toast.success(`Lote agregado exitosamente a ${existingProductModal.product.commercialName}`);
         router.push(redirectPath);
       }
     } catch (error) {
@@ -286,11 +250,29 @@ export function AddProductOrBatch({ location }: AddProductOrBatchProps) {
       console.error(error);
     } finally {
       setIsSubmitting(false);
+      setExistingProductModal({ open: false, product: null, formData: null });
     }
   };
 
-  // Manejar crear producto nuevo
-  const onSubmitProduct = async (data: CreateProductFormData) => {
+  // Manejar submit del formulario
+  const onSubmit = async (data: CreateProductFormData) => {
+    setIsCheckingCode(true);
+
+    // Verificar si el código ya existe
+    const existingProduct = await checkCodeExists(data.internalCode);
+    setIsCheckingCode(false);
+
+    if (existingProduct) {
+      // Mostrar modal preguntando si quiere agregar lote
+      setExistingProductModal({
+        open: true,
+        product: existingProduct,
+        formData: data,
+      });
+      return;
+    }
+
+    // Crear producto nuevo
     setIsSubmitting(true);
     try {
       const result = await createProductAction({
@@ -311,7 +293,7 @@ export function AddProductOrBatch({ location }: AddProductOrBatchProps) {
           manufacturingDate: data.manufacturingDate,
           quantity: data.quantity,
           purchasePrice: data.purchasePrice,
-          salePrice: data.salePrice
+          salePrice: data.salePrice,
         },
       });
 
@@ -339,581 +321,445 @@ export function AddProductOrBatch({ location }: AddProductOrBatchProps) {
 
   return (
     <div className="space-y-6">
-      {/* Paso 1: Buscar producto */}
       <Card className="p-6">
-        <div className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div>
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Search className="h-5 w-5" />
-              Paso 1: Buscar Producto
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Ingresa el código interno para verificar si el producto ya existe
-            </p>
+            <h2 className="text-lg font-semibold">Nuevo Producto</h2>
+            <span className="text-sm text-muted-foreground">
+              Completa la información del producto y su lote inicial para{' '}
+              <Badge variant="outline" className="ml-1">
+                {location === 'farmacia' ? 'Farmacia' : 'Bodega'}
+              </Badge>
+            </span>
           </div>
 
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <Label htmlFor="searchCode">Código Interno</Label>
-              <div className="relative mt-1">
+          <Separator />
+
+          {/* Información Básica */}
+          <div className="space-y-4">
+            <h3 className="font-medium">Información Básica</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="internalCode">Código Interno *</Label>
                 <Input
-                  id="searchCode"
+                  id="internalCode"
                   placeholder="Ej: MED-001"
-                  value={searchCode}
-                  onChange={(e) => setSearchCode(e.target.value)}
-                  className="pr-10"
+                  {...register('internalCode')}
                 />
-                {isSearching && (
-                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                {errors.internalCode && (
+                  <p className="text-sm text-destructive">
+                    {errors.internalCode.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="commercialName">Nombre Comercial *</Label>
+                <Input
+                  id="commercialName"
+                  placeholder="Paracetamol 500mg"
+                  {...register('commercialName')}
+                />
+                {errors.commercialName && (
+                  <p className="text-sm text-destructive">
+                    {errors.commercialName.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="md:col-span-2 space-y-2">
+                <Label htmlFor="genericName">Componente Activo *</Label>
+                <Input
+                  id="genericName"
+                  placeholder="Acetaminofén"
+                  {...register('genericName')}
+                />
+                {errors.genericName && (
+                  <p className="text-sm text-destructive">
+                    {errors.genericName.message}
+                  </p>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Resultado de la búsqueda */}
-          {searchPerformed && searchCode.length >= 2 && (
-            <div className="mt-4">
-              {existingProduct ? (
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
-                    <div className="flex-1">
-                      <h3 className="font-medium text-yellow-800 dark:text-yellow-200">
-                        Producto Existente Encontrado
-                      </h3>
-                      <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-                        Este producto ya existe en el sistema. Solo puedes agregar un nuevo lote.
-                      </p>
-                      <div className="mt-3 bg-white dark:bg-gray-800 rounded-md p-3">
-                        <div className="flex items-center gap-2">
-                          <Package className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">{existingProduct.commercialName}</span>
-                          <Badge variant="outline">{existingProduct.internalCode}</Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {existingProduct.genericName} - {existingProduct.presentation} {existingProduct.concentration}
-                        </p>
-                        <p className="text-sm mt-1">
-                          <span className="text-muted-foreground">Stock total:</span>{' '}
-                          <span className="font-medium">{existingProduct.totalStock}</span>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
-                    <div>
-                      <h3 className="font-medium text-green-800 dark:text-green-200">
-                        Código Disponible
-                      </h3>
-                      <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-                        No existe un producto con este código. Puedes crear uno nuevo.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </Card>
+          <Separator />
 
-      {/* Paso 2: Formulario según el caso */}
-      {searchPerformed && searchCode.length >= 2 && (
-        <Card className="p-6">
-          {existingProduct ? (
-            // Formulario para agregar lote
-            <form onSubmit={batchForm.handleSubmit(onSubmitBatch)} className="space-y-6">
-              <div>
-                <h2 className="text-lg font-semibold">
-                  Paso 2: Agregar Lote a {existingProduct.commercialName}
-                </h2>
-                <span className="text-sm text-muted-foreground">
-                  Completa la información del nuevo lote para{' '}
-                  <Badge variant="outline" className="ml-1">
-                    {location === 'farmacia' ? 'Farmacia' : 'Bodega'}
-                  </Badge>
-                </span>
-              </div>
-
-              <Separator />
-
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <Label htmlFor="batch-batchNumber">Número de Lote *</Label>
-                  <Input
-                    id="batch-batchNumber"
-                    placeholder="LOTE-2025-001"
-                    {...batchForm.register('batchNumber')}
-                  />
-                  {batchForm.formState.errors.batchNumber && (
-                    <p className="text-sm text-destructive">
-                      {batchForm.formState.errors.batchNumber.message}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="batch-manufacturingDate">Fecha Fabricación *</Label>
-                  <Input
-                    id="batch-manufacturingDate"
-                    type="date"
-                    {...batchForm.register('manufacturingDate')}
-                  />
-                  {batchForm.formState.errors.manufacturingDate && (
-                    <p className="text-sm text-destructive">
-                      {batchForm.formState.errors.manufacturingDate.message}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="batch-expiryDate">Fecha Vencimiento *</Label>
-                  <Input
-                    id="batch-expiryDate"
-                    type="date"
-                    {...batchForm.register('expiryDate')}
-                  />
-                  {batchForm.formState.errors.expiryDate && (
-                    <p className="text-sm text-destructive">
-                      {batchForm.formState.errors.expiryDate.message}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="batch-quantity">Cantidad *</Label>
-                  <Input
-                    id="batch-quantity"
-                    type="number"
-                    min="1"
-                    {...batchForm.register('quantity', { valueAsNumber: true })}
-                  />
-                  {batchForm.formState.errors.quantity && (
-                    <p className="text-sm text-destructive">
-                      {batchForm.formState.errors.quantity.message}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="batch-purchasePrice">Precio Compra (Q) *</Label>
-                  <Input
-                    id="batch-purchasePrice"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    {...batchForm.register('purchasePrice', { valueAsNumber: true })}
-                  />
-                  {batchForm.formState.errors.purchasePrice && (
-                    <p className="text-sm text-destructive">
-                      {batchForm.formState.errors.purchasePrice.message}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="batch-salePrice">Precio Venta (Q) *</Label>
-                  <Input
-                    id="batch-salePrice"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    {...batchForm.register('salePrice', { valueAsNumber: true })}
-                  />
-                  {batchForm.formState.errors.salePrice && (
-                    <p className="text-sm text-destructive">
-                      {batchForm.formState.errors.salePrice.message}
-                    </p>
-                  )}
-                </div>
+          {/* Presentación */}
+          <div className="space-y-4">
+            <h3 className="font-medium">Presentación y Medidas</h3>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="presentation">Presentación *</Label>
+                <select
+                  id="presentation"
+                  {...register('presentation')}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Seleccionar</option>
+                  {Object.entries(ProductPresentation).map(([key, value]) => (
+                    <option key={key} value={value}>
+                      {presentationLabels[value]}
+                    </option>
+                  ))}
+                </select>
+                {errors.presentation && (
+                  <p className="text-sm text-destructive">
+                    {errors.presentation.message}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="batch-notes">Notas (opcional)</Label>
-                <Textarea
-                  id="batch-notes"
-                  placeholder="Observaciones adicionales..."
-                  rows={2}
-                  {...batchForm.register('notes')}
+                <Label htmlFor="concentration">Concentración *</Label>
+                <Input
+                  id="concentration"
+                  placeholder="500"
+                  {...register('concentration')}
                 />
+                {errors.concentration && (
+                  <p className="text-sm text-destructive">
+                    {errors.concentration.message}
+                  </p>
+                )}
               </div>
 
-              <div className="flex justify-end gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.push(redirectPath)}
-                  disabled={isSubmitting}
+              <div className="space-y-2">
+                <Label htmlFor="unitOfMeasure">Unidad de Medida *</Label>
+                <select
+                  id="unitOfMeasure"
+                  {...register('unitOfMeasure')}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Agregar Lote
-                </Button>
+                  <option value="">Seleccionar</option>
+                  {Object.entries(UnitOfMeasure).map(([key, value]) => (
+                    <option key={key} value={value}>
+                      {unitOfMeasureLabels[value]}
+                    </option>
+                  ))}
+                </select>
+                {errors.unitOfMeasure && (
+                  <p className="text-sm text-destructive">
+                    {errors.unitOfMeasure.message}
+                  </p>
+                )}
               </div>
-            </form>
-          ) : (
-            // Formulario para crear producto nuevo
-            <form onSubmit={productForm.handleSubmit(onSubmitProduct)} className="space-y-6">
-              <div>
-                <h2 className="text-lg font-semibold">Paso 2: Crear Producto Nuevo</h2>
-                <span className="text-sm text-muted-foreground">
-                  Completa la información del producto y su lote inicial para{' '}
-                  <Badge variant="outline" className="ml-1">
-                    {location === 'farmacia' ? 'Farmacia' : 'Bodega'}
-                  </Badge>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Stock */}
+          <div className="space-y-4">
+            <h3 className="font-medium">Configuración de Stock</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="minimumStock">Stock Mínimo *</Label>
+                <Input
+                  id="minimumStock"
+                  type="number"
+                  min="0"
+                  {...register('minimumStock', { valueAsNumber: true })}
+                />
+                {errors.minimumStock && (
+                  <p className="text-sm text-destructive">
+                    {errors.minimumStock.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="maximumStock">Stock Máximo *</Label>
+                <Input
+                  id="maximumStock"
+                  type="number"
+                  min="0"
+                  {...register('maximumStock', { valueAsNumber: true })}
+                />
+                {errors.maximumStock && (
+                  <p className="text-sm text-destructive">
+                    {errors.maximumStock.message}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Categoría y Proveedor */}
+          <div className="space-y-4">
+            <h3 className="font-medium">Categoría y Proveedor</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="categoryId">Categoría *</Label>
+                <div className="flex gap-2">
+                  <select
+                    id="categoryId"
+                    {...register('categoryId')}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">Seleccionar</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        { cat.code } - {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setIsAddCategoryOpen(true)}
+                    title="Agregar nueva categoría"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {errors.categoryId && (
+                  <p className="text-sm text-destructive">
+                    {errors.categoryId.message}
+                  </p>
+                )}
+                {categories.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No hay categorías. Haz clic en + para crear una.
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="providerId">Proveedor *</Label>
+                <div className="flex gap-2">
+                  <select
+                    id="providerId"
+                    {...register('providerId')}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">Seleccionar</option>
+                    {providers.map((prov) => (
+                      <option key={prov.id} value={prov.id}>
+                        {prov.name}
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setIsAddProviderOpen(true)}
+                    title="Agregar nuevo proveedor"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {errors.providerId && (
+                  <p className="text-sm text-destructive">
+                    {errors.providerId.message}
+                  </p>
+                )}
+                {providers.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No hay proveedores. Haz clic en + para crear uno.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Lote Inicial */}
+          <div className="space-y-4">
+            <h3 className="font-medium">Lote Inicial</h3>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="batchNumber">Número de Lote *</Label>
+                <Input
+                  id="batchNumber"
+                  placeholder="LOTE-2025-001"
+                  {...register('batchNumber')}
+                />
+                {errors.batchNumber && (
+                  <p className="text-sm text-destructive">
+                    {errors.batchNumber.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="manufacturingDate">Fecha Ingreso *</Label>
+                <Input
+                  id="manufacturingDate"
+                  type="date"
+                  {...register('manufacturingDate')}
+                />
+                {errors.manufacturingDate && (
+                  <p className="text-sm text-destructive">
+                    {errors.manufacturingDate.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="expiryDate">Fecha Vencimiento *</Label>
+                <Input
+                  id="expiryDate"
+                  type="date"
+                  {...register('expiryDate')}
+                />
+                {errors.expiryDate && (
+                  <p className="text-sm text-destructive">
+                    {errors.expiryDate.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="quantity">Cantidad *</Label>
+                <Input
+                  id="quantity"
+                  type="number"
+                  min="1"
+                  {...register('quantity', { valueAsNumber: true })}
+                />
+                {errors.quantity && (
+                  <p className="text-sm text-destructive">
+                    {errors.quantity.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="purchasePrice">Precio Compra (Q) *</Label>
+                <Input
+                  id="purchasePrice"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  {...register('purchasePrice', { valueAsNumber: true })}
+                />
+                {errors.purchasePrice && (
+                  <p className="text-sm text-destructive">
+                    {errors.purchasePrice.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="salePrice">Precio Venta (Q) *</Label>
+                <Input
+                  id="salePrice"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  {...register('salePrice', { valueAsNumber: true })}
+                />
+                {errors.salePrice && (
+                  <p className="text-sm text-destructive">
+                    {errors.salePrice.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notas (opcional)</Label>
+              <Textarea
+                id="notes"
+                placeholder="Observaciones adicionales..."
+                rows={2}
+                {...register('notes')}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.push(redirectPath)}
+              disabled={isSubmitting || isCheckingCode}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isSubmitting || isCheckingCode}>
+              {(isSubmitting || isCheckingCode) && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {isCheckingCode ? 'Verificando código...' : 'Crear Producto'}
+            </Button>
+          </div>
+        </form>
+      </Card>
+
+      {/* Modal para producto existente */}
+      <Dialog
+        open={existingProductModal.open}
+        onOpenChange={(open) => {
+          if (!open && !isSubmitting) {
+            setExistingProductModal({ open: false, product: null, formData: null });
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Producto Existente
+            </DialogTitle>
+            <DialogDescription>
+              Ya existe un producto con el código interno ingresado.
+            </DialogDescription>
+          </DialogHeader>
+
+          {existingProductModal.product && (
+            <div className="bg-muted rounded-lg p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">
+                  {existingProductModal.product.commercialName}
                 </span>
+                <Badge variant="outline">
+                  {existingProductModal.product.internalCode}
+                </Badge>
               </div>
-
-              <Separator />
-
-              {/* Información Básica */}
-              <div className="space-y-4">
-                <h3 className="font-medium">Información Básica</h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="product-internalCode">Código Interno *</Label>
-                    <Input
-                      id="product-internalCode"
-                      {...productForm.register('internalCode')}
-                      disabled
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="product-commercialName">Nombre Comercial *</Label>
-                    <Input
-                      id="product-commercialName"
-                      placeholder="Paracetamol 500mg"
-                      {...productForm.register('commercialName')}
-                    />
-                    {productForm.formState.errors.commercialName && (
-                      <p className="text-sm text-destructive">
-                        {productForm.formState.errors.commercialName.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="md:col-span-2 space-y-2">
-                    <Label htmlFor="product-genericName">Componente Activo *</Label>
-                    <Input
-                      id="product-genericName"
-                      placeholder="Acetaminofén"
-                      {...productForm.register('genericName')}
-                    />
-                    {productForm.formState.errors.genericName && (
-                      <p className="text-sm text-destructive">
-                        {productForm.formState.errors.genericName.message}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Presentación */}
-              <div className="space-y-4">
-                <h3 className="font-medium">Presentación y Medidas</h3>
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="product-presentation">Presentación *</Label>
-                    <select
-                      id="product-presentation"
-                      {...productForm.register('presentation')}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="">Seleccionar</option>
-                      {Object.entries(ProductPresentation).map(([key, value]) => (
-                        <option key={key} value={value}>
-                          {presentationLabels[value]}
-                        </option>
-                      ))}
-                    </select>
-                    {productForm.formState.errors.presentation && (
-                      <p className="text-sm text-destructive">
-                        {productForm.formState.errors.presentation.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="product-concentration">Concentración *</Label>
-                    <Input
-                      id="product-concentration"
-                      placeholder="500"
-                      {...productForm.register('concentration')}
-                    />
-                    {productForm.formState.errors.concentration && (
-                      <p className="text-sm text-destructive">
-                        {productForm.formState.errors.concentration.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="product-unitOfMeasure">Unidad de Medida *</Label>
-                    <select
-                      id="product-unitOfMeasure"
-                      {...productForm.register('unitOfMeasure')}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="">Seleccionar</option>
-                      {Object.entries(UnitOfMeasure).map(([key, value]) => (
-                        <option key={key} value={value}>
-                          {unitOfMeasureLabels[value]}
-                        </option>
-                      ))}
-                    </select>
-                    {productForm.formState.errors.unitOfMeasure && (
-                      <p className="text-sm text-destructive">
-                        {productForm.formState.errors.unitOfMeasure.message}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Stock */}
-              <div className="space-y-4">
-                <h3 className="font-medium">Configuración de Stock</h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="product-minimumStock">Stock Mínimo *</Label>
-                    <Input
-                      id="product-minimumStock"
-                      type="number"
-                      min="0"
-                      {...productForm.register('minimumStock', { valueAsNumber: true })}
-                    />
-                    {productForm.formState.errors.minimumStock && (
-                      <p className="text-sm text-destructive">
-                        {productForm.formState.errors.minimumStock.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="product-maximumStock">Stock Máximo *</Label>
-                    <Input
-                      id="product-maximumStock"
-                      type="number"
-                      min="0"
-                      {...productForm.register('maximumStock', { valueAsNumber: true })}
-                    />
-                    {productForm.formState.errors.maximumStock && (
-                      <p className="text-sm text-destructive">
-                        {productForm.formState.errors.maximumStock.message}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Categoría y Proveedor */}
-              <div className="space-y-4">
-                <h3 className="font-medium">Categoría y Proveedor</h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="product-categoryId">Categoría *</Label>
-                    <div className="flex gap-2">
-                      <select
-                        id="product-categoryId"
-                        {...productForm.register('categoryId')}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      >
-                        <option value="">Seleccionar</option>
-                        {categories.map((cat) => (
-                          <option key={cat.id} value={cat.id}>
-                            {cat.name}
-                          </option>
-                        ))}
-                      </select>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setIsAddCategoryOpen(true)}
-                        title="Agregar nueva categoría"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    {productForm.formState.errors.categoryId && (
-                      <p className="text-sm text-destructive">
-                        {productForm.formState.errors.categoryId.message}
-                      </p>
-                    )}
-                    {categories.length === 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        No hay categorías. Haz clic en + para crear una.
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="product-providerId">Proveedor *</Label>
-                    <div className="flex gap-2">
-                      <select
-                        id="product-providerId"
-                        {...productForm.register('providerId')}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      >
-                        <option value="">Seleccionar</option>
-                        {providers.map((prov) => (
-                          <option key={prov.id} value={prov.id}>
-                            {prov.name}
-                          </option>
-                        ))}
-                      </select>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setIsAddProviderOpen(true)}
-                        title="Agregar nuevo proveedor"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    {productForm.formState.errors.providerId && (
-                      <p className="text-sm text-destructive">
-                        {productForm.formState.errors.providerId.message}
-                      </p>
-                    )}
-                    {providers.length === 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        No hay proveedores. Haz clic en + para crear uno.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Lote Inicial */}
-              <div className="space-y-4">
-                <h3 className="font-medium">Lote Inicial</h3>
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="product-batchNumber">Número de Lote *</Label>
-                    <Input
-                      id="product-batchNumber"
-                      placeholder="LOTE-2025-001"
-                      {...productForm.register('batchNumber')}
-                    />
-                    {productForm.formState.errors.batchNumber && (
-                      <p className="text-sm text-destructive">
-                        {productForm.formState.errors.batchNumber.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="product-manufacturingDate">Fecha Fabricación *</Label>
-                    <Input
-                      id="product-manufacturingDate"
-                      type="date"
-                      {...productForm.register('manufacturingDate')}
-                    />
-                    {productForm.formState.errors.manufacturingDate && (
-                      <p className="text-sm text-destructive">
-                        {productForm.formState.errors.manufacturingDate.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="product-expiryDate">Fecha Vencimiento *</Label>
-                    <Input
-                      id="product-expiryDate"
-                      type="date"
-                      {...productForm.register('expiryDate')}
-                    />
-                    {productForm.formState.errors.expiryDate && (
-                      <p className="text-sm text-destructive">
-                        {productForm.formState.errors.expiryDate.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="product-quantity">Cantidad *</Label>
-                    <Input
-                      id="product-quantity"
-                      type="number"
-                      min="1"
-                      {...productForm.register('quantity', { valueAsNumber: true })}
-                    />
-                    {productForm.formState.errors.quantity && (
-                      <p className="text-sm text-destructive">
-                        {productForm.formState.errors.quantity.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="product-purchasePrice">Precio Compra (Q) *</Label>
-                    <Input
-                      id="product-purchasePrice"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      {...productForm.register('purchasePrice', { valueAsNumber: true })}
-                    />
-                    {productForm.formState.errors.purchasePrice && (
-                      <p className="text-sm text-destructive">
-                        {productForm.formState.errors.purchasePrice.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="product-salePrice">Precio Venta (Q) *</Label>
-                    <Input
-                      id="product-salePrice"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      {...productForm.register('salePrice', { valueAsNumber: true })}
-                    />
-                    {productForm.formState.errors.salePrice && (
-                      <p className="text-sm text-destructive">
-                        {productForm.formState.errors.salePrice.message}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.push(redirectPath)}
-                  disabled={isSubmitting}
-                >
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Crear Producto
-                </Button>
-              </div>
-            </form>
+              <p className="text-sm text-muted-foreground">
+                {existingProductModal.product.genericName} -{' '}
+                {existingProductModal.product.presentation}{' '}
+                {existingProductModal.product.concentration}
+              </p>
+              <p className="text-sm">
+                <span className="text-muted-foreground">Stock total:</span>{' '}
+                <span className="font-medium">
+                  {existingProductModal.product.totalStock}
+                </span>
+              </p>
+            </div>
           )}
-        </Card>
-      )}
+
+          <p className="text-sm text-muted-foreground">
+            ¿Deseas agregar un nuevo lote a este producto existente con la
+            información del lote que ingresaste?
+          </p>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() =>
+                setExistingProductModal({ open: false, product: null, formData: null })
+              }
+              disabled={isSubmitting}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={addBatchToExisting} disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Agregar Lote
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Modales para agregar rápido */}
       <QuickAddCategoryModal

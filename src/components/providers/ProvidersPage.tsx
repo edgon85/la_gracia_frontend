@@ -70,7 +70,7 @@ export function ProvidersPage({ initialData }: ProvidersPageProps) {
   }, [currentPage, itemsPerPage, sortField, sortOrder, filters]);
 
   const handleFilterChange = (
-    newFilters: Omit<IProviderFilters, 'page' | 'limit' | 'sortBy'>
+    newFilters: Omit<IProviderFilters, 'page' | 'limit' | 'sortBy'>,
   ) => {
     setFilters(newFilters);
     setCurrentPage(1);

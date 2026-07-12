@@ -62,15 +62,17 @@ export async function getMovementsAction(
     const params = new URLSearchParams();
 
     if (filters.type) params.append('type', filters.type);
-    if (filters.reason) params.append('reason', filters.reason);
+    if (filters.category) params.append('category', filters.category);
     if (filters.productId) params.append('productId', filters.productId);
     if (filters.batchId) params.append('batchId', filters.batchId);
+    if (filters.createdById) params.append('createdById', filters.createdById);
+    if (filters.location) params.append('location', filters.location);
     if (filters.startDate) params.append('startDate', filters.startDate);
     if (filters.endDate) params.append('endDate', filters.endDate);
     if (filters.page) params.append('page', filters.page.toString());
     if (filters.limit) params.append('limit', filters.limit.toString());
-    if (filters.location) params.append('location', filters.location);
-    if (filters.category) params.append('category', filters.category);
+    if (filters.sortBy) params.append('sortBy', filters.sortBy);
+    if (filters.order) params.append('order', filters.order);
 
     const queryString = params.toString();
     const url = `${API_URL}/inventory-movements${queryString ? `?${queryString}` : ''}`;
