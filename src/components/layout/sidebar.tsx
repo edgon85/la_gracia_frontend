@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Home,
-  Package,
   FlaskConical,
   Warehouse,
   Truck,
@@ -14,6 +13,7 @@ import {
   ChevronRight,
   X,
   Tags,
+  FileText,
 } from 'lucide-react';
 import { LogoutButton } from '../buttons';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -109,6 +109,23 @@ const menuItems: MenuItem[] = [
     href: '/dashboard/users',
     module: 'users',
   },
+  {
+    label: 'Reportes',
+    icon: FileText,
+    module: 'reports',
+    subItems: [
+      {
+        label: 'Productos',
+        href: '/dashboard/reports/products',
+        module: 'reports',
+      },
+      {
+        label: 'Movimientos',
+        href: '/dashboard/reports/movements',
+        module: 'reports',
+      },
+    ],
+  },
 ];
 
 export const Sidebar = (props: SidebarProps) => {
@@ -147,7 +164,7 @@ export const Sidebar = (props: SidebarProps) => {
     setExpandedItems((prev) =>
       prev.includes(label)
         ? prev.filter((item) => item !== label)
-        : [...prev, label]
+        : [...prev, label],
     );
   };
 

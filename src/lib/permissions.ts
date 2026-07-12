@@ -13,7 +13,8 @@ export type Module =
   | 'providers'
   | 'pharmacy'
   | 'warehouse'
-  | 'users';
+  | 'users'
+  | 'reports';
 
 // Acciones disponibles por módulo
 export type Action = 'view' | 'create' | 'edit' | 'delete';
@@ -36,9 +37,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, ModulePermissions> = {
     pharmacy: ['view', 'create', 'edit', 'delete'],
     warehouse: ['view', 'create', 'edit', 'delete'],
     users: ['view', 'create', 'edit', 'delete'],
+    reports: ['view'],
   },
 
-  // Auditor: acceso a todo pero solo lectura (para fase 2: reportes)
+  // Auditor: acceso a todo pero solo lectura
   auditor: {
     dashboard: ['view'],
     profile: ['view', 'edit'],
@@ -48,6 +50,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, ModulePermissions> = {
     pharmacy: ['view'],
     warehouse: ['view'],
     users: ['view'],
+    reports: ['view'],
   },
 
   // Warehouse: gestión de inventario de bodega
@@ -59,6 +62,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, ModulePermissions> = {
     providers: ['view', 'create', 'edit', 'delete'],
     warehouse: ['view', 'create', 'edit', 'delete'],
     pharmacy: ['view'],
+    reports: ['view'],
   },
 
   // Pharmacy: gestión de despachos de farmacia
@@ -69,6 +73,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, ModulePermissions> = {
     categories: ['view'],
     pharmacy: ['view', 'create', 'edit'],
     warehouse: ['view'],
+    reports: ['view'],
   },
 
   // Doctor: ver farmacia (fase 2: solicitar medicamentos)
@@ -115,6 +120,10 @@ export const ROUTE_TO_MODULE: Record<string, Module> = {
   // Users
   '/dashboard/users': 'users',
   '/dashboard/users/new': 'users',
+  // Reports
+  '/dashboard/reports': 'reports',
+  '/dashboard/reports/products': 'reports',
+  '/dashboard/reports/movements': 'reports',
 };
 
 // Mapeo de rutas a acciones requeridas
@@ -140,6 +149,10 @@ export const ROUTE_TO_ACTION: Record<string, Action> = {
   // Users
   '/dashboard/users': 'view',
   '/dashboard/users/new': 'create',
+  // Reports
+  '/dashboard/reports': 'view',
+  '/dashboard/reports/products': 'view',
+  '/dashboard/reports/movements': 'view',
 };
 
 /**
