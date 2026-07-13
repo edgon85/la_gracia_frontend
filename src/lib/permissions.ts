@@ -14,7 +14,8 @@ export type Module =
   | 'pharmacy'
   | 'warehouse'
   | 'users'
-  | 'reports';
+  | 'reports'
+  | 'settings';
 
 // Acciones disponibles por módulo
 export type Action = 'view' | 'create' | 'edit' | 'delete';
@@ -38,6 +39,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, ModulePermissions> = {
     warehouse: ['view', 'create', 'edit', 'delete'],
     users: ['view', 'create', 'edit', 'delete'],
     reports: ['view'],
+    settings: ['view', 'create', 'delete'],
   },
 
   // Auditor: acceso a todo pero solo lectura
@@ -126,6 +128,9 @@ export const ROUTE_TO_MODULE: Record<string, Module> = {
   '/dashboard/reports': 'reports',
   '/dashboard/reports/products': 'reports',
   '/dashboard/reports/movements': 'reports',
+  // Settings
+  '/dashboard/settings': 'settings',
+  '/dashboard/settings/backups': 'settings',
 };
 
 // Mapeo de rutas a acciones requeridas
@@ -157,6 +162,9 @@ export const ROUTE_TO_ACTION: Record<string, Action> = {
   '/dashboard/reports': 'view',
   '/dashboard/reports/products': 'view',
   '/dashboard/reports/movements': 'view',
+  // Settings
+  '/dashboard/settings': 'view',
+  '/dashboard/settings/backups': 'view',
 };
 
 /**

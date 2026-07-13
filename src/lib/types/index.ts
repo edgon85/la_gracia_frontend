@@ -5,3 +5,4 @@ export * from './category.types';
 export * from './user.types';
 export * from './inventory.types';
 export * from './report.types';
+export * from './backup.types';
