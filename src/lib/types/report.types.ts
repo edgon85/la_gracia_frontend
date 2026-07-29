@@ -35,4 +35,6 @@ export interface IMovementsReportFilters {
   year?: number;
   location?: ProductLocation;
   category?: 'ENTRY' | 'EXIT';
+  sortBy?: 'date' | 'product';
+  order?: 'ASC' | 'DESC';
 }

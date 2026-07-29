@@ -68,6 +68,8 @@ export function MovementsReportPage() {
   const [category, setCategory] = useState<'ENTRY' | 'EXIT' | undefined>(
     undefined,
   );
+  const [sortBy, setSortBy] = useState<'date' | 'product'>('date');
+  const [order, setOrder] = useState<'ASC' | 'DESC'>('ASC');
   const [loading, setLoading] = useState(false);
 
   const isReady =
@@ -78,7 +80,12 @@ export function MovementsReportPage() {
   const handleDownload = async () => {
     if (!isReady) return;
 
-    const filters: IMovementsReportFilters = { location, category };
+    const filters: IMovementsReportFilters = {
+      location,
+      category,
+      sortBy,
+      order,
+    };
     if (dateMode === 'day') filters.date = date;
     if (dateMode === 'month') {
       filters.month = month;
@@ -221,7 +228,7 @@ export function MovementsReportPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-200 dark:border-gray-800 pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 border-t border-gray-200 dark:border-gray-800 pt-4">
             <div className="space-y-2">
               <Label>Ubicación</Label>
               <Select
@@ -266,6 +273,40 @@ export function MovementsReportPage() {
                   <SelectItem value={NONE_VALUE}>Todos</SelectItem>
                   <SelectItem value="ENTRY">Entradas</SelectItem>
                   <SelectItem value="EXIT">Salidas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Ordenar por</Label>
+              <Select
+                value={sortBy}
+                onValueChange={(value) =>
+                  setSortBy(value as 'date' | 'product')
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date">Fecha</SelectItem>
+                  <SelectItem value="product">Producto</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Dirección</Label>
+              <Select
+                value={order}
+                onValueChange={(value) => setOrder(value as 'ASC' | 'DESC')}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ASC">Ascendente</SelectItem>
+                  <SelectItem value="DESC">Descendente</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -94,6 +94,8 @@ export async function getMovementsReportAction(
     if (filters.year !== undefined) params.append('year', filters.year.toString());
     if (filters.location) params.append('location', filters.location);
     if (filters.category) params.append('category', filters.category);
+    if (filters.sortBy) params.append('sortBy', filters.sortBy);
+    if (filters.order) params.append('order', filters.order);
 
     const url = `${API_URL}/reports/movements?${params.toString()}`;
     const response = await fetch(url, {
