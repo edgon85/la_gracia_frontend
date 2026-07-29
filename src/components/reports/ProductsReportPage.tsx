@@ -7,6 +7,7 @@ import {
   ICategory,
   IProductsReportFilters,
   ProductLocation,
+  ReportExpiryStatus,
   ReportStockStatus,
 } from '@/lib';
 import {
@@ -48,6 +49,29 @@ export function ProductsReportPage({ categories }: ProductsReportPageProps) {
     value: IProductsReportFilters[K],
   ) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const stockStatusSelectValue =
+    filters.stockStatus ?? filters.expiryStatus?.[0] ?? NONE_VALUE;
+
+  const handleStockStatusChange = (value: string) => {
+    setFilters((prev) => {
+      if (value === NONE_VALUE) {
+        return { ...prev, stockStatus: undefined, expiryStatus: undefined };
+      }
+      if (value === 'expired' || value === 'near_expiry') {
+        return {
+          ...prev,
+          stockStatus: undefined,
+          expiryStatus: [value as ReportExpiryStatus],
+        };
+      }
+      return {
+        ...prev,
+        stockStatus: value as ReportStockStatus,
+        expiryStatus: undefined,
+      };
+    });
   };
 
   const handleDownload = async () => {
@@ -147,15 +171,8 @@ export function ProductsReportPage({ categories }: ProductsReportPageProps) {
             <div className="space-y-2">
               <Label>Estado de stock</Label>
               <Select
-                value={filters.stockStatus ?? NONE_VALUE}
-                onValueChange={(value) =>
-                  updateFilter(
-                    'stockStatus',
-                    value === NONE_VALUE
-                      ? undefined
-                      : (value as ReportStockStatus),
-                  )
-                }
+                value={stockStatusSelectValue}
+                onValueChange={handleStockStatusChange}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
@@ -165,6 +182,8 @@ export function ProductsReportPage({ categories }: ProductsReportPageProps) {
                   <SelectItem value="ok">OK</SelectItem>
                   <SelectItem value="low">Bajo mínimo</SelectItem>
                   <SelectItem value="out">Sin stock</SelectItem>
+                  <SelectItem value="expired">Vencido</SelectItem>
+                  <SelectItem value="near_expiry">Próximo a vencer</SelectItem>
                 </SelectContent>
               </Select>
             </div>

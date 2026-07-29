@@ -2,11 +2,13 @@ import { ProductLocation } from './product.types';
 
 // ---- Products report ----
 export type ReportStockStatus = 'ok' | 'low' | 'out';
+export type ReportExpiryStatus = 'near_expiry' | 'expired';
 
 export interface IProductsReportFilters {
   location?: ProductLocation;
   categoryId?: string;
   stockStatus?: ReportStockStatus;
+  expiryStatus?: ReportExpiryStatus[];
   includeInactive?: boolean;
   price?: boolean;
   minPurchasePrice?: number;

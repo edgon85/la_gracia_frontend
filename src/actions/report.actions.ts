@@ -38,6 +38,11 @@ export async function getProductsReportAction(
     if (filters.location) params.append('location', filters.location);
     if (filters.categoryId) params.append('categoryId', filters.categoryId);
     if (filters.stockStatus) params.append('stockStatus', filters.stockStatus);
+    if (filters.expiryStatus) {
+      filters.expiryStatus.forEach((status) =>
+        params.append('expiryStatus', status)
+      );
+    }
     if (filters.includeInactive !== undefined)
       params.append('includeInactive', filters.includeInactive.toString());
     if (filters.price !== undefined) params.append('price', filters.price.toString());
