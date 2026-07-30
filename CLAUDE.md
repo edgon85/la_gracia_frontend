@@ -64,7 +64,7 @@ Uses **shadcn/ui** component library (configured in [components.json](components
 
 - **Route Groups**:
   - `(auth)/` - Authentication pages (`login`, `register`, `change-password`)
-  - `dashboard/` - Protected application pages with DashboardLayout. Modules: `categories`, `products`, `providers`, `users`, `profile`, `pharmacy` (`products`, `dispensations`, `expiring`, `expired`), `warehouse` (`products`, `dispensations`, `expiring`, `expired`), `reports` (`products`, `movements`), `inventario` (`movimientos`), `settings` (landing with section cards + `backups`)
+  - `dashboard/` - Protected application pages with DashboardLayout. Modules: `categories`, `products`, `providers`, `users`, `profile`, `pharmacy` (`products`, `dispensations`, `expiring`, `expired`), `warehouse` (`products`, `dispensations`, `expiring`, `expired`), `reports` (`products`, `movements`), `settings` (landing with section cards + `backups` + `movements`)
 
 - **Header alignment**: the sidebar header and the navbar both use a fixed `h-16` height so their bottom borders line up. Keep `h-16` if you touch either header.
 
@@ -72,13 +72,13 @@ Uses **shadcn/ui** component library (configured in [components.json](components
 
 - [src/lib/permissions.ts](src/lib/permissions.ts) defines module-level RBAC: `Module` (`dashboard`, `profile`, `products`, `categories`, `providers`, `pharmacy`, `warehouse`, `users`, `reports`, `settings`), `Action` (`view`, `create`, `edit`, `delete`), and `ROLE_PERMISSIONS: Record<UserRole, ModulePermissions>`.
 - `UserRole` string values (`'admin' | 'user' | 'pharmacy' | 'warehouse' | 'doctor' | 'nurse' | 'auditor'`) mirror the backend's `ValidRoles`, lowercase.
-- The `settings` module (Configuración → Respaldos) is **admin-only**.
+- The `settings` module (Configuración → Respaldos / Movimientos) is **admin-only**.
 - Use `checkPermission()` / `checkRouteAccess()` (in `auth.actions.ts`) to gate server-side access per module/action instead of ad-hoc role checks. Client-side, use the `usePermissions()` hook ([src/hooks/usePermissions.ts](src/hooks/usePermissions.ts)) — e.g. the navbar shows "Configuración" only when `canView('settings')`; the sidebar filters `menuItems` by each item's `module`.
 - **When adding a new module/route**: add it to the `Module` union, to the relevant roles in `ROLE_PERMISSIONS`, and to BOTH `ROUTE_TO_MODULE` and `ROUTE_TO_ACTION` — `canAccessRoute()` denies unmapped routes by default.
 
-### Settings / Backups Module (admin-only)
+### Settings Module (admin-only)
 
-- **Routes**: `/dashboard/settings` ([src/app/dashboard/settings/page.tsx](src/app/dashboard/settings/page.tsx)) is a landing page with section cards ([src/components/settings/SettingsPage.tsx](src/components/settings/SettingsPage.tsx)) — to add a future settings section, add an entry to its `sections` array. `/dashboard/settings/backups` hosts the database backups manager.
+- **Routes**: `/dashboard/settings` ([src/app/dashboard/settings/page.tsx](src/app/dashboard/settings/page.tsx)) is a landing page with section cards ([src/components/settings/SettingsPage.tsx](src/components/settings/SettingsPage.tsx)) — to add a future settings section, add an entry to its `sections` array. `/dashboard/settings/backups` hosts the database backups manager; `/dashboard/settings/movements` hosts the global inventory movements history (reuses `MovementsPage` from [src/components/inventory](src/components/inventory) — this is the ONLY entry point to that screen; the old `/dashboard/inventario/movimientos` route was removed).
 - **Entry point**: the navbar user dropdown's "Configuración" item (gated by `canView('settings')`) navigates to `/dashboard/settings`.
 - **Server actions** ([src/actions/backup.actions.ts](src/actions/backup.actions.ts)): `getBackupsAction()`, `createBackupAction()`, `getBackupDownloadUrlAction(key)`, `deleteBackupAction(key)`. Backend endpoints: `GET/POST ${API_URL}/backups`, `GET ${API_URL}/backups/:key/url`, `DELETE ${API_URL}/backups/:key` (always `encodeURIComponent(key)`).
 - **Components**: [src/components/settings/backups/BackupsPage.tsx](src/components/settings/backups/BackupsPage.tsx) (client orchestrator: create with pending state, download, delete with AlertDialog confirm, refresh) and `BackupsTable.tsx` (presentational; Fecha / Tamaño / Acciones).
@@ -90,8 +90,22 @@ Uses **shadcn/ui** component library (configured in [components.json](components
 
 - **Routes**: `/dashboard/{pharmacy,warehouse}/expiring` (lotes próximos a vencer, with a 7/30/60/90-day period `Select`) and `/dashboard/{pharmacy,warehouse}/expired` (lotes ya vencidos, no period filter). Each pair of pages is a thin server component calling `getValidatedUserWithPermission('<pharmacy|warehouse>', 'view')` then rendering a single shared client component parametrized by `location: 'farmacia' | 'bodega'`.
 - **Shared components**: [src/components/expiring/ExpiringBatchesPage.tsx](src/components/expiring/ExpiringBatchesPage.tsx) and [src/components/expired/ExpiredBatchesPage.tsx](src/components/expired/ExpiredBatchesPage.tsx) — same shape (header with location icon, stat cards, shadcn `Table`), each used by both the pharmacy and warehouse page for that concern instead of per-module duplicates.
-- **Server actions** ([src/actions/product.actions.ts](src/actions/product.actions.ts)): `getExpiringBatchesAction(days, location)` → `GET /products/batches/expiring?days&location`; `getExpiredBatchesAction(location)` → `GET /products/alerts/expired?location`. Both uppercase `location` before sending and return `IExpiringBatch[]` (or `{ error }`).
+- **Server actions** ([src/actions/product.actions.ts](src/actions/product.actions.ts)): `getExpiringBatchesAction(days, location)` → `GET /products/batches/expiring?days&location`; `getExpiredBatchesAction(location)` → `GET /products/alerts/expired?location`. Both uppercase `location` before sending and return `IExpiringBatch[]` (or `{ error }`). **Both also filter the response client-side by `batch.location`** — the backend ignores the `location` query param on these endpoints; keep the defensive filter.
 - When adding either page/route, remember the permissions step above (`ROUTE_TO_MODULE`/`ROUTE_TO_ACTION`) plus a sidebar sub-item in [src/components/layout/sidebar.tsx](src/components/layout/sidebar.tsx).
+- The sidebar fetches expired counts per location (via `getExpiredBatchesAction`) in a `useEffect` keyed on `pathname` and injects them as red `badge` pills on the "Vencidos" sub-items.
+- **Batch `status` is stale**: the backend only recalculates it on writes, so an expired batch may still say `ACTIVE`/`NEAR_EXPIRY`. Never use `status` to decide expiry — compare `expiryDate` against today with `isExpiredDate()` from [src/lib/utils.ts](src/lib/utils.ts) (string compare on `"YYYY-MM-DD"`). `minExpiryDate()` (tomorrow) is the `min` attr for expiry date inputs; all three batch-creating forms (`AddBatchModal`, `AddProductOrBatch`, `ProductForm`) reject expired dates via a zod `.refine`.
+
+### Inventory Write-off (Baja) — EXPIRED / DAMAGED / LOST
+
+- **Server actions** ([src/actions/inventory.actions.ts](src/actions/inventory.actions.ts)): `createWriteOffAction(IWriteOffRequest)` → `POST /inventory-movements/write-off` (`batchId`, `type: WriteOffType`, optional `quantity` — **omit = write off the whole batch**, `reason`, `reference`, `notes`); `writeOffExpiredAction(IWriteOffExpiredRequest)` → `POST /inventory-movements/write-off/expired` (bulk, idempotent, returns `{ batchesWrittenOff, totalQuantity, totalValue, movements }`). Types in [src/lib/types/inventory.types.ts](src/lib/types/inventory.types.ts).
+- Write-off values (`unitPrice`/`totalPrice`/`totalValue`) use the batch **purchase price** (loss at cost), not sale price — label monetary displays accordingly ("Valor de pérdida", `Q`).
+- `POST /inventory-movements/exit` **rejects `type=EXPIRED`** (expired batches are excluded from `/exit` entirely) — `ExitType` deliberately omits `'EXPIRED'`; expired stock can only leave via write-off.
+- **UI**: [src/components/inventory/WriteOffBatchModal.tsx](src/components/inventory/WriteOffBatchModal.tsx) is the shared modal (Dialog + RHF + zod; `presetType="EXPIRED"` locks the type; otherwise DAMAGED/LOST + EXPIRED only when the batch is date-expired; quantity prefilled to full batch; `reason` is **required**). Used from `ExpiredBatchesPage` (per-row + bulk "Dar de baja todos" with required reason in its AlertDialog) and `ProductDetailModal` (per-batch button). All write-off buttons are gated `isAdmin` (UI-only restriction; backend also accepts pharmacy/warehouse roles).
+- Backend business-rule 400s come back in Spanish via `errorData.message` — surface them directly.
+
+### Pending / Not Yet Implemented
+
+- **Batch editing UI**: there is NO screen to edit an existing batch. The backend endpoint exists — `PATCH /products/batches/:batchId` (UpdateBatchDto: all fields optional — batchNumber, dates, prices, quantity, status, isActive; see the doc comment in [src/app/dashboard/products/page.tsx](src/app/dashboard/products/page.tsx)). When implementing, note: changing `quantity` there does NOT create an InventoryMovement, and changing `expiryDate` can leave `status` stale (decide expiry by date, not `status`). Natural home: an "Editar lote" modal next to the write-off button in `ProductDetailModal`, following the `AddBatchModal` pattern.
 
 ### Styling & Theming
 
