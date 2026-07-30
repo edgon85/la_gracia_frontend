@@ -67,6 +67,11 @@ const menuItems: MenuItem[] = [
         href: '/dashboard/pharmacy/expiring',
         module: 'pharmacy',
       },
+      {
+        label: 'Vencidos',
+        href: '/dashboard/pharmacy/expired',
+        module: 'pharmacy',
+      },
     ],
   },
   {
@@ -87,6 +92,11 @@ const menuItems: MenuItem[] = [
       {
         label: 'Próximos a vencer',
         href: '/dashboard/warehouse/expiring',
+        module: 'warehouse',
+      },
+      {
+        label: 'Vencidos',
+        href: '/dashboard/warehouse/expired',
         module: 'warehouse',
       },
     ],

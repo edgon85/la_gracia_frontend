@@ -64,7 +64,7 @@ Uses **shadcn/ui** component library (configured in [components.json](components
 
 - **Route Groups**:
   - `(auth)/` - Authentication pages (`login`, `register`, `change-password`)
-  - `dashboard/` - Protected application pages with DashboardLayout. Modules: `categories`, `products`, `providers`, `users`, `profile`, `pharmacy` (`products`, `dispensations`, `expiring`), `warehouse` (`products`, `dispensations`, `expiring`), `reports` (`products`, `movements`), `inventario` (`movimientos`), `settings` (landing with section cards + `backups`)
+  - `dashboard/` - Protected application pages with DashboardLayout. Modules: `categories`, `products`, `providers`, `users`, `profile`, `pharmacy` (`products`, `dispensations`, `expiring`, `expired`), `warehouse` (`products`, `dispensations`, `expiring`, `expired`), `reports` (`products`, `movements`), `inventario` (`movimientos`), `settings` (landing with section cards + `backups`)
 
 - **Header alignment**: the sidebar header and the navbar both use a fixed `h-16` height so their bottom borders line up. Keep `h-16` if you touch either header.
 
@@ -85,6 +85,13 @@ Uses **shadcn/ui** component library (configured in [components.json](components
 - **Download URLs are signed R2 URLs valid for 1 hour** — request a fresh URL on every click (`getBackupDownloadUrlAction` + `window.open`); never store/cache them.
 - The backend also creates an automatic backup every 5 days at midnight and prunes backups older than 30 days (the UI shows an informational note about this).
 - Backup list response shape is `{ data, total }` — NOT the paginated `{ data, meta }` shape used by other modules.
+
+### Expiring / Expired Batches (Pharmacy + Warehouse)
+
+- **Routes**: `/dashboard/{pharmacy,warehouse}/expiring` (lotes próximos a vencer, with a 7/30/60/90-day period `Select`) and `/dashboard/{pharmacy,warehouse}/expired` (lotes ya vencidos, no period filter). Each pair of pages is a thin server component calling `getValidatedUserWithPermission('<pharmacy|warehouse>', 'view')` then rendering a single shared client component parametrized by `location: 'farmacia' | 'bodega'`.
+- **Shared components**: [src/components/expiring/ExpiringBatchesPage.tsx](src/components/expiring/ExpiringBatchesPage.tsx) and [src/components/expired/ExpiredBatchesPage.tsx](src/components/expired/ExpiredBatchesPage.tsx) — same shape (header with location icon, stat cards, shadcn `Table`), each used by both the pharmacy and warehouse page for that concern instead of per-module duplicates.
+- **Server actions** ([src/actions/product.actions.ts](src/actions/product.actions.ts)): `getExpiringBatchesAction(days, location)` → `GET /products/batches/expiring?days&location`; `getExpiredBatchesAction(location)` → `GET /products/alerts/expired?location`. Both uppercase `location` before sending and return `IExpiringBatch[]` (or `{ error }`).
+- When adding either page/route, remember the permissions step above (`ROUTE_TO_MODULE`/`ROUTE_TO_ACTION`) plus a sidebar sub-item in [src/components/layout/sidebar.tsx](src/components/layout/sidebar.tsx).
 
 ### Styling & Theming
 
@@ -139,6 +146,14 @@ import { z } from 'zod';
 1. Call `await getValidatedUserWithPermission('<module>', 'view')` in the async server page component (handles both auth and RBAC redirects)
 2. Fetch initial data via server action and pass it to a client component in `src/components/<module>/` (see categories for the reference pattern: server `page.tsx` → client orchestrator → shadcn `Table`)
 3. Wrap in dashboard layout for consistent UI (automatic under `src/app/dashboard/`)
+
+### Products Report Expiry Filter
+
+- [src/components/reports/ProductsReportPage.tsx](src/components/reports/ProductsReportPage.tsx)'s "Estado de stock" `<Select>` has six options: Todos, OK, Bajo mínimo, Sin stock, Vencido, Próximo a vencer — a single control driving two mutually exclusive backend params on `IProductsReportFilters` ([src/lib/types/report.types.ts](src/lib/types/report.types.ts)):
+  - `stockStatus?: 'ok' | 'low' | 'out'` — quantity-based state.
+  - `expiryStatus?: ('near_expiry' | 'expired')[]` — lot-level filter (`GET /reports/products?expiryStatus=...`, repeatable param). A product with mixed lots only shows matching rows; products with zero matching lots are excluded entirely (never shown as false "SIN STOCK").
+  - Picking Vencido/Próximo a vencer sets `expiryStatus` and clears `stockStatus`; picking OK/Bajo mínimo/Sin stock does the reverse — never send both from this select.
+- Do **not** send `expired`/`near_expiry` as `stockStatus` values — only `ok | low | out` are confirmed valid there.
 
 ### Working with Zustand Stores
 

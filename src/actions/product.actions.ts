@@ -383,3 +383,49 @@ export async function getExpiringBatchesAction(
     };
   }
 }
+
+/**
+ * Obtiene lotes ya vencidos
+ * GET /products/alerts/expired?location=farmacia
+ */
+export async function getExpiredBatchesAction(
+  location?: 'farmacia' | 'bodega',
+): Promise<IExpiringBatch[] | { error: string }> {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      return { error: 'No autenticado' };
+    }
+
+    const params = new URLSearchParams();
+    if (location) params.append('location', location.toUpperCase());
+
+    const response = await fetch(
+      `${API_URL}/products/alerts/expired?${params.toString()}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        cache: 'no-store',
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return {
+        error: errorData.message || 'Error al obtener lotes vencidos',
+      };
+    }
+
+    const batches: IExpiringBatch[] = await response.json();
+    return batches;
+  } catch (error) {
+    console.error('Error fetching expired batches:', error);
+    return {
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}

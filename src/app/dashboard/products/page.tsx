@@ -37,3 +37,13 @@ export default async function ProductPage() {
   // Pass initial data to client component
   return <ProductsPage initialData={response} />;
 }
+/* 
+Sí. PATCH /products/batches/:batchId permite editar un lote existente.
+
+Body (UpdateBatchDto, todos los campos opcionales, PartialType de AddBatchDto):
+- batchNumber, expiryDate, manufacturingDate, quantity, purchasePrice, salePrice, notes, location (FARMACIA/BODEGA)
+- más status (BatchStatus) e isActive propios de UpdateBatchDto
+
+Lo maneja product-batch.service.ts vía productsService.updateBatch(batchId, dto, user). Ten en cuenta las notas del proyecto: status puede quedar desactualizado si no se recalcula tras cambiar expiryDate (usa calculateBatchStatus/isExpired() para verificar en vivo), y cambiar quantity aquí no genera un InventoryMovement — para eso están los endpoints de /inventory-movements/entry y /exit.
+
+*/

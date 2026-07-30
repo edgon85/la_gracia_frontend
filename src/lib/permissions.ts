@@ -114,11 +114,13 @@ export const ROUTE_TO_MODULE: Record<string, Module> = {
   '/dashboard/pharmacy/products': 'pharmacy',
   '/dashboard/pharmacy/dispensations': 'pharmacy',
   '/dashboard/pharmacy/expiring': 'pharmacy',
+  '/dashboard/pharmacy/expired': 'pharmacy',
   // Warehouse
   '/dashboard/warehouse': 'warehouse',
   '/dashboard/warehouse/products': 'warehouse',
   '/dashboard/warehouse/dispensations': 'warehouse',
   '/dashboard/warehouse/expiring': 'warehouse',
+  '/dashboard/warehouse/expired': 'warehouse',
   // Inventory
   '/dashboard/inventario/movimientos': 'products',
   // Users
@@ -148,11 +150,13 @@ export const ROUTE_TO_ACTION: Record<string, Action> = {
   '/dashboard/pharmacy/products': 'view',
   '/dashboard/pharmacy/dispensations': 'view',
   '/dashboard/pharmacy/expiring': 'view',
+  '/dashboard/pharmacy/expired': 'view',
   // Warehouse
   '/dashboard/warehouse': 'view',
   '/dashboard/warehouse/products': 'view',
   '/dashboard/warehouse/dispensations': 'view',
   '/dashboard/warehouse/expiring': 'view',
+  '/dashboard/warehouse/expired': 'view',
   // Inventory
   '/dashboard/inventario/movimientos': 'view',
   // Users
