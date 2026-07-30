@@ -33,6 +33,7 @@ import {
   addBatchToProductAction,
 } from '@/actions/product.actions';
 import { getCategoriesAction } from '@/actions/category.actions';
+import { isExpiredDate, minExpiryDate } from '@/lib/utils';
 import { getProvidersAction } from '@/actions/provider.actions';
 import { QuickAddCategoryModal } from './QuickAddCategoryModal';
 import { QuickAddProviderModal } from './QuickAddProviderModal';
@@ -58,7 +59,13 @@ const createProductSchema = z.object({
   providerId: z.string().min(1, 'El proveedor es requerido'),
   // Initial batch
   batchNumber: z.string().min(1, 'El número de lote es requerido'),
-  expiryDate: z.string().min(1, 'La fecha de vencimiento es requerida'),
+  expiryDate: z
+    .string()
+    .min(1, 'La fecha de vencimiento es requerida')
+    .refine(
+      (val) => !isExpiredDate(val),
+      'El lote está vencido; no se puede ingresar un lote con fecha de vencimiento pasada'
+    ),
   manufacturingDate: z.string().min(1, 'La fecha de ingreso'),
   quantity: z.number().min(1, 'La cantidad debe ser mayor a 0'),
   purchasePrice: z.number().min(0, 'El precio de compra debe ser mayor o igual a 0'),
@@ -606,6 +613,7 @@ export function AddProductOrBatch({ location }: AddProductOrBatchProps) {
                 <Input
                   id="expiryDate"
                   type="date"
+                  min={minExpiryDate()}
                   {...register('expiryDate')}
                 />
                 {errors.expiryDate && (

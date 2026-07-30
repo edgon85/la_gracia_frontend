@@ -121,8 +121,6 @@ export const ROUTE_TO_MODULE: Record<string, Module> = {
   '/dashboard/warehouse/dispensations': 'warehouse',
   '/dashboard/warehouse/expiring': 'warehouse',
   '/dashboard/warehouse/expired': 'warehouse',
-  // Inventory
-  '/dashboard/inventario/movimientos': 'products',
   // Users
   '/dashboard/users': 'users',
   '/dashboard/users/new': 'users',
@@ -133,6 +131,7 @@ export const ROUTE_TO_MODULE: Record<string, Module> = {
   // Settings
   '/dashboard/settings': 'settings',
   '/dashboard/settings/backups': 'settings',
+  '/dashboard/settings/movements': 'settings',
 };
 
 // Mapeo de rutas a acciones requeridas
@@ -157,8 +156,6 @@ export const ROUTE_TO_ACTION: Record<string, Action> = {
   '/dashboard/warehouse/dispensations': 'view',
   '/dashboard/warehouse/expiring': 'view',
   '/dashboard/warehouse/expired': 'view',
-  // Inventory
-  '/dashboard/inventario/movimientos': 'view',
   // Users
   '/dashboard/users': 'view',
   '/dashboard/users/new': 'create',
@@ -169,6 +166,7 @@ export const ROUTE_TO_ACTION: Record<string, Action> = {
   // Settings
   '/dashboard/settings': 'view',
   '/dashboard/settings/backups': 'view',
+  '/dashboard/settings/movements': 'view',
 };
 
 /**

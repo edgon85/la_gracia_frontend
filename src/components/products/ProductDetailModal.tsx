@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { IProduct } from '@/lib';
+import { IProduct, IBatch } from '@/lib';
+import { usePermissions } from '@/hooks/usePermissions';
+import { isExpiredDate } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -20,8 +22,10 @@ import {
   AlertCircle,
   Pill,
   Plus,
+  PackageMinus,
 } from 'lucide-react';
 import { AddBatchModal } from './AddBatchModal';
+import { WriteOffBatchModal } from '@/components/inventory/WriteOffBatchModal';
 
 interface ProductDetailModalProps {
   product: IProduct | null;
@@ -39,18 +43,29 @@ export function ProductDetailModal({
   location,
 }: ProductDetailModalProps) {
   const [isAddBatchOpen, setIsAddBatchOpen] = useState(false);
+  const [writeOffBatch, setWriteOffBatch] = useState<IBatch | null>(null);
+  const [isWriteOffOpen, setIsWriteOffOpen] = useState(false);
+  const { isAdmin } = usePermissions();
 
   if (!product) return null;
+
+  const canWriteOffBatch = (batch: IBatch) =>
+    batch.quantity > 0 && batch.isActive && isAdmin;
 
   // Filtrar lotes por ubicación si se especifica
   const filteredBatches = location
     ? product.batches.filter(batch => batch.location === location.toUpperCase())
     : product.batches;
 
-  // Calcular stock por ubicación
+  // Calcular stock por ubicación (excluye vencidos por fecha, igual que el backend)
   const locationStock = location
     ? filteredBatches
-        .filter(batch => batch.status === 'ACTIVE')
+        .filter(
+          batch =>
+            batch.isActive &&
+            batch.quantity > 0 &&
+            !isExpiredDate(batch.expiryDate.slice(0, 10))
+        )
         .reduce((sum, batch) => sum + batch.quantity, 0)
     : product.totalStock;
 
@@ -76,17 +91,19 @@ export function ProductDetailModal({
     return <Badge className="bg-green-500">Disponible</Badge>;
   };
 
-  const getBatchStatus = (status: string) => {
-    switch (status) {
-      case 'ACTIVE':
-        return <Badge className="bg-green-500">Activo</Badge>;
-      case 'EXPIRED':
-        return <Badge variant="destructive">Vencido</Badge>;
-      case 'DEPLETED':
-        return <Badge variant="secondary">Agotado</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+  // status puede venir desactualizado (solo se recalcula al escribir);
+  // el vencimiento se decide en vivo por fecha
+  const getBatchStatus = (batch: IBatch) => {
+    if (batch.quantity <= 0 || batch.status === 'DEPLETED') {
+      return <Badge variant="secondary">Agotado</Badge>;
     }
+    if (isExpiredDate(batch.expiryDate.slice(0, 10))) {
+      return <Badge variant="destructive">Vencido</Badge>;
+    }
+    if (batch.status === 'NEAR_EXPIRY') {
+      return <Badge className="bg-orange-500">Próximo a vencer</Badge>;
+    }
+    return <Badge className="bg-green-500">Activo</Badge>;
   };
 
   return (
@@ -266,7 +283,23 @@ export function ProductDetailModal({
                   >
                     <div className="flex justify-between items-start mb-2">
                       <span className="font-medium">Lote: {batch.batchNumber}</span>
-                      {getBatchStatus(batch.status)}
+                      <div className="flex items-center gap-2">
+                        {getBatchStatus(batch)}
+                        {canWriteOffBatch(batch) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-destructive hover:text-destructive"
+                            onClick={() => {
+                              setWriteOffBatch(batch);
+                              setIsWriteOffOpen(true);
+                            }}
+                          >
+                            <PackageMinus className="h-4 w-4 mr-1" />
+                            Dar de baja
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
@@ -320,6 +353,25 @@ export function ProductDetailModal({
         productName={product.commercialName}
         open={isAddBatchOpen}
         onOpenChange={setIsAddBatchOpen}
+        onSuccess={onBatchAdded}
+      />
+
+      <WriteOffBatchModal
+        batch={
+          writeOffBatch && {
+            id: writeOffBatch.id,
+            batchNumber: writeOffBatch.batchNumber,
+            quantity: writeOffBatch.quantity,
+            expiryDate: writeOffBatch.expiryDate,
+            purchasePrice: writeOffBatch.purchasePrice,
+          }
+        }
+        productName={product.commercialName}
+        open={isWriteOffOpen}
+        onOpenChange={(open) => {
+          setIsWriteOffOpen(open);
+          if (!open) setWriteOffBatch(null);
+        }}
         onSuccess={onBatchAdded}
       />
     </Dialog>

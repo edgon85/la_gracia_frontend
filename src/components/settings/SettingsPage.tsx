@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { DatabaseBackup, ChevronRight } from 'lucide-react';
+import { DatabaseBackup, History, ChevronRight } from 'lucide-react';
 import {
   Card,
   CardDescription,
@@ -15,6 +15,12 @@ const sections = [
     description: 'Crea, descarga y administra los respaldos de la base de datos',
     href: '/dashboard/settings/backups',
     icon: DatabaseBackup,
+  },
+  {
+    title: 'Movimientos',
+    description: 'Historial de todos los movimientos de inventario del sistema',
+    href: '/dashboard/settings/movements',
+    icon: History,
   },
 ];
 

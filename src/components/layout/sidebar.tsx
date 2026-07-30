@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -18,6 +18,7 @@ import {
 import { LogoutButton } from '../buttons';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Module } from '@/lib/permissions';
+import { getExpiredBatchesAction } from '@/actions/product.actions';
 
 interface SubMenuItem {
   label: string;
@@ -142,7 +143,43 @@ export const Sidebar = (props: SidebarProps) => {
   const { isOpen, onClose } = props;
   const pathname = usePathname();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [expiredCounts, setExpiredCounts] = useState({
+    farmacia: 0,
+    bodega: 0,
+  });
   const { canView } = usePermissions();
+
+  const canViewPharmacy = canView('pharmacy');
+  const canViewWarehouse = canView('warehouse');
+
+  // Conteo de lotes vencidos para los badges; se refresca al navegar
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchCounts = async () => {
+      const [farmacia, bodega] = await Promise.all([
+        canViewPharmacy ? getExpiredBatchesAction('farmacia') : [],
+        canViewWarehouse ? getExpiredBatchesAction('bodega') : [],
+      ]);
+
+      if (cancelled) return;
+      setExpiredCounts({
+        farmacia: 'error' in farmacia ? 0 : farmacia.length,
+        bodega: 'error' in bodega ? 0 : bodega.length,
+      });
+    };
+
+    fetchCounts().catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname, canViewPharmacy, canViewWarehouse]);
+
+  const expiredBadges: Record<string, number> = {
+    '/dashboard/pharmacy/expired': expiredCounts.farmacia,
+    '/dashboard/warehouse/expired': expiredCounts.bodega,
+  };
 
   // Filtrar elementos del menú según permisos
   const filteredMenuItems = useMemo(() => {
@@ -157,10 +194,15 @@ export const Sidebar = (props: SidebarProps) => {
         .map((item) => {
           // Filtrar subitems también
           if (item.subItems) {
-            const filteredSubItems = item.subItems.filter((subItem) => {
-              if (!subItem.module) return true;
-              return canView(subItem.module);
-            });
+            const filteredSubItems = item.subItems
+              .filter((subItem) => {
+                if (!subItem.module) return true;
+                return canView(subItem.module);
+              })
+              .map((subItem) => ({
+                ...subItem,
+                badge: expiredBadges[subItem.href] ?? subItem.badge,
+              }));
             return { ...item, subItems: filteredSubItems };
           }
           return item;
@@ -168,7 +210,8 @@ export const Sidebar = (props: SidebarProps) => {
         // Remover items con subItems vacíos
         .filter((item) => !item.subItems || item.subItems.length > 0)
     );
-  }, [canView]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canView, expiredCounts]);
 
   const toggleExpand = (label: string) => {
     setExpandedItems((prev) =>

@@ -18,6 +18,7 @@ import {
 } from '@/actions/product.actions';
 import { getCategoriesAction } from '@/actions/category.actions';
 import { getProvidersAction } from '@/actions/provider.actions';
+import { isExpiredDate, minExpiryDate } from '@/lib/utils';
 import { QuickAddCategoryModal } from './QuickAddCategoryModal';
 import { QuickAddProviderModal } from './QuickAddProviderModal';
 import {
@@ -46,7 +47,13 @@ const createProductSchema = z.object({
   providerId: z.string().min(1, 'El proveedor es requerido'),
   // Initial Batch fields (solo para crear)
   batchNumber: z.string().optional(),
-  expiryDate: z.string().optional(),
+  expiryDate: z
+    .string()
+    .optional()
+    .refine(
+      (val) => !val || !isExpiredDate(val),
+      'El lote está vencido; no se puede ingresar un lote con fecha de vencimiento pasada'
+    ),
   manufacturingDate: z.string().optional(),
   quantity: z.number().optional(),
   purchasePrice: z.number().optional(),
@@ -682,8 +689,14 @@ export function ProductForm({
               <Input
                 id="expiryDate"
                 type="date"
+                min={minExpiryDate()}
                 {...register('expiryDate' as keyof ProductFormData)}
               />
+              {'expiryDate' in errors && errors.expiryDate && (
+                <p className="text-sm text-destructive">
+                  {errors.expiryDate.message}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">

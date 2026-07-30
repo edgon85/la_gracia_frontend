@@ -70,7 +70,7 @@ export interface IBatch {
   initialQuantity: number;
   purchasePrice: string;
   salePrice: string;
-  status: 'ACTIVE' | 'EXPIRED' | 'DEPLETED';
+  status: 'ACTIVE' | 'EXPIRED' | 'DEPLETED' | 'NEAR_EXPIRY';
   location: 'FARMACIA' | 'BODEGA';
   notes: string | null;
   isActive: boolean;
@@ -154,8 +154,14 @@ export interface IExpiringBatch {
   batchNumber: string;
   expiryDate: string;
   quantity: number;
+  initialQuantity?: number;
+  purchasePrice?: string;
+  salePrice?: string;
+  // Puede venir desactualizado (solo se recalcula al escribir) — no usar para decidir vencimiento
   status: 'ACTIVE' | 'EXPIRED' | 'DEPLETED' | 'NEAR_EXPIRY';
   location: 'FARMACIA' | 'BODEGA';
+  isActive?: boolean;
+  productId?: string;
   product: {
     id: string;
     commercialName: string;

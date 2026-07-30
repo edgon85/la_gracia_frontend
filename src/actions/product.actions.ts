@@ -375,6 +375,11 @@ export async function getExpiringBatchesAction(
     }
 
     const batches: IExpiringBatch[] = await response.json();
+    // Filtro defensivo: el backend puede ignorar el parámetro location
+    if (location) {
+      const loc = location.toUpperCase();
+      return batches.filter((batch) => batch.location === loc);
+    }
     return batches;
   } catch (error) {
     console.error('Error fetching expiring batches:', error);
@@ -421,6 +426,11 @@ export async function getExpiredBatchesAction(
     }
 
     const batches: IExpiringBatch[] = await response.json();
+    // Filtro defensivo: el backend puede ignorar el parámetro location
+    if (location) {
+      const loc = location.toUpperCase();
+      return batches.filter((batch) => batch.location === loc);
+    }
     return batches;
   } catch (error) {
     console.error('Error fetching expired batches:', error);

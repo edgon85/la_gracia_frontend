@@ -1,8 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ProductSearch } from './ProductSearch';
 import { DispensationCart } from './DispensationCart';
@@ -11,7 +9,6 @@ import {
   FlaskConical,
   Warehouse,
   Package,
-  History,
   Keyboard,
   ArrowRight,
 } from 'lucide-react';
@@ -21,7 +18,6 @@ interface DispensationPageProps {
 }
 
 export function DispensationPage({ location = 'farmacia' }: DispensationPageProps) {
-  const router = useRouter();
   const { getTotalItems } = useDispensationStore();
 
   const isFarmacia = location === 'farmacia';
@@ -45,15 +41,6 @@ export function DispensationPage({ location = 'farmacia' }: DispensationPageProp
           <p className="text-muted-foreground mt-1">
             {description}
           </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => router.push('/dashboard/inventario/movimientos')}
-          >
-            <History className="h-4 w-4 mr-2" />
-            Ver Historial
-          </Button>
         </div>
       </div>
 

@@ -23,11 +23,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { addBatchToProductAction } from '@/actions/product.actions';
+import { isExpiredDate, minExpiryDate } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 
 const addBatchSchema = z.object({
   batchNumber: z.string().min(1, 'El número de lote es requerido'),
-  expiryDate: z.string().min(1, 'La fecha de vencimiento es requerida'),
+  expiryDate: z
+    .string()
+    .min(1, 'La fecha de vencimiento es requerida')
+    .refine(
+      (val) => !isExpiredDate(val),
+      'El lote está vencido; no se puede ingresar un lote con fecha de vencimiento pasada'
+    ),
   manufacturingDate: z.string().min(1, 'La fecha de ingreso es requerida'),
   quantity: z
     .string()
@@ -171,6 +178,7 @@ export function AddBatchModal({
               <Input
                 id="expiryDate"
                 type="date"
+                min={minExpiryDate()}
                 {...register('expiryDate')}
               />
               {errors.expiryDate && (

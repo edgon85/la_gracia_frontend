@@ -61,8 +61,7 @@ export interface IInventoryMovement {
   batch?: IBatch;
   createdBy?: {
     id: string;
-    firstName: string;
-    lastName: string;
+    fullName: string;
   };
 }
 
@@ -72,7 +71,6 @@ export type ExitType =
   | 'TRANSFER'
   | 'ADJUSTMENT'
   | 'LOSS'
-  | 'EXPIRED'
   | 'DAMAGED';
 
 export interface ICreateExitRequest {
@@ -99,6 +97,57 @@ export interface ICreateExitResponse {
   reason: string | null;
   reference: string | null;
   createdAt: string;
+}
+
+// Baja de inventario (write-off): vencidos, dañados, perdidos
+export type WriteOffType = 'EXPIRED' | 'DAMAGED' | 'LOST';
+
+export const WriteOffTypeLabels: Record<WriteOffType, string> = {
+  EXPIRED: 'Vencido',
+  DAMAGED: 'Dañado',
+  LOST: 'Pérdida',
+};
+
+export interface IWriteOffRequest {
+  batchId: string;
+  type: WriteOffType;
+  quantity?: number; // omitir = todo el lote
+  reason?: string; // máx 500
+  reference?: string; // máx 100
+  notes?: string;
+}
+
+// Respuesta plana del POST /write-off (sin relaciones pobladas)
+export interface IWriteOffMovement {
+  id: string;
+  type: WriteOffType;
+  category: 'EXIT';
+  quantity: number;
+  previousStock: number;
+  newStock: number;
+  reason: string | null;
+  reference: string | null;
+  notes: string | null;
+  unitPrice: string | number | null;
+  totalPrice: string | number | null;
+  productId: string;
+  batchId: string;
+  createdById: string;
+  createdAt: string;
+}
+
+export interface IWriteOffExpiredRequest {
+  productId?: string;
+  location?: 'FARMACIA' | 'BODEGA';
+  reason?: string; // máx 500
+  notes?: string;
+}
+
+export interface IWriteOffExpiredResponse {
+  batchesWrittenOff: number;
+  totalQuantity: number;
+  totalValue: string | number;
+  movements: IWriteOffMovement[];
 }
 
 export interface IMovementFilters {

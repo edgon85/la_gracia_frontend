@@ -7,6 +7,10 @@ import {
   IMovementsResponse,
   IInventoryMovement,
   IMovementSummary,
+  IWriteOffRequest,
+  IWriteOffMovement,
+  IWriteOffExpiredRequest,
+  IWriteOffExpiredResponse,
 } from '@/lib';
 import { getToken } from './auth.actions';
 
@@ -43,6 +47,83 @@ export async function createExitMovementAction(
     return result;
   } catch (error) {
     console.error('Error creating exit movement:', error);
+    return {
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+export async function createWriteOffAction(
+  data: IWriteOffRequest
+): Promise<IWriteOffMovement | { error: string }> {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      return { error: 'No autenticado' };
+    }
+
+    const response = await fetch(`${API_URL}/inventory-movements/write-off`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return {
+        error: errorData.message || 'Error al registrar la baja',
+      };
+    }
+
+    const result: IWriteOffMovement = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error creating write-off:', error);
+    return {
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+export async function writeOffExpiredAction(
+  data: IWriteOffExpiredRequest = {}
+): Promise<IWriteOffExpiredResponse | { error: string }> {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      return { error: 'No autenticado' };
+    }
+
+    const response = await fetch(
+      `${API_URL}/inventory-movements/write-off/expired`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+        cache: 'no-store',
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return {
+        error: errorData.message || 'Error al dar de baja los lotes vencidos',
+      };
+    }
+
+    const result: IWriteOffExpiredResponse = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error writing off expired batches:', error);
     return {
       error: error instanceof Error ? error.message : 'Error desconocido',
     };
