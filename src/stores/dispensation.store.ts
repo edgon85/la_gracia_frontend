@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { IProduct, IDispensationItem } from '@/lib';
+import { getAvailableStockByLocation } from '@/lib/utils';
 
 interface DispensationState {
   items: IDispensationItem[];
@@ -22,20 +23,6 @@ interface DispensationState {
   getTotalQuantity: () => number;
   getStockByLocation: (product: IProduct) => number;
 }
-
-// Helper para calcular stock por ubicación
-const calculateStockByLocation = (
-  product: IProduct,
-  location: 'farmacia' | 'bodega' | null
-): number => {
-  if (!location) {
-    return product.totalStock;
-  }
-  const backendLocation = location.toUpperCase() as 'FARMACIA' | 'BODEGA';
-  return product.batches
-    .filter((batch) => batch.location === backendLocation && batch.status === 'ACTIVE')
-    .reduce((sum, batch) => sum + batch.quantity, 0);
-};
 
 export const useDispensationStore = create<DispensationState>((set, get) => ({
   items: [],
@@ -105,5 +92,5 @@ export const useDispensationStore = create<DispensationState>((set, get) => ({
     get().items.reduce((total, item) => total + item.quantity, 0),
 
   getStockByLocation: (product: IProduct) =>
-    calculateStockByLocation(product, get().location),
+    getAvailableStockByLocation(product, get().location ?? undefined),
 }));

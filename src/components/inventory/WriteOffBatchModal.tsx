@@ -26,6 +26,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { createWriteOffAction } from '@/actions/inventory.actions';
 import { WriteOffType, WriteOffTypeLabels } from '@/lib';
+import { isExpiredDate } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 
 export interface WriteOffBatchInfo {
@@ -105,9 +106,8 @@ export function WriteOffBatchModal({
     },
   });
 
-  // El lote está vencido si su fecha ya pasó (comparación de strings YYYY-MM-DD)
-  const todayISO = new Date().toISOString().slice(0, 10);
-  const isExpired = (batch?.expiryDate ?? '').slice(0, 10) <= todayISO;
+  // El lote está vencido si su fecha ya pasó (a partir del día siguiente, TZ Guatemala)
+  const isExpired = !!batch && isExpiredDate(batch.expiryDate.slice(0, 10));
 
   const selectedType = watch('type');
   const watchedQuantity = Number(watch('quantity')) || 0;

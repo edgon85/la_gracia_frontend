@@ -19,6 +19,7 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import { useDispensationStore } from '@/stores';
+import { getAvailableBatchesByLocation } from '@/lib/utils';
 import { createExitMovementAction } from '@/actions/inventory.actions';
 import { toast } from 'sonner';
 import {
@@ -59,13 +60,10 @@ export function DispensationCart({ onSuccess }: DispensationCartProps) {
     return parseFloat(price);
   };
 
-  // Obtener lotes filtrados por ubicación
+  // Obtener lotes despachables filtrados por ubicación
   const getLocationBatches = (product: (typeof items)[0]['product']) => {
     if (!location) return product.batches;
-    const backendLocation = location.toUpperCase() as 'FARMACIA' | 'BODEGA';
-    return product.batches.filter(
-      (batch) => batch.location === backendLocation && batch.status === 'ACTIVE'
-    );
+    return getAvailableBatchesByLocation(product, location);
   };
 
   const getItemTotal = (item: (typeof items)[0]) => {

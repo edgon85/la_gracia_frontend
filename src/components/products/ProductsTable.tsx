@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowUpDown, Pencil, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProductDetailModal } from './ProductDetailModal';
+import { getAvailableStockByLocation } from '@/lib/utils';
 
 interface ProductsTableProps {
   products: IProduct[];
@@ -24,17 +25,6 @@ interface ProductsTableProps {
   onRefresh?: () => void;
   location?: 'farmacia' | 'bodega';
 }
-
-// Calcular stock por ubicación
-const getStockByLocation = (product: IProduct, location?: 'farmacia' | 'bodega'): number => {
-  if (!location) {
-    return product.totalStock;
-  }
-  const backendLocation = location.toUpperCase() as 'FARMACIA' | 'BODEGA';
-  return product.batches
-    .filter(batch => batch.location === backendLocation && batch.status === 'ACTIVE')
-    .reduce((sum, batch) => sum + batch.quantity, 0);
-};
 
 export function ProductsTable({
   products,
@@ -175,7 +165,7 @@ export function ProductsTable({
                   </TableCell>
                   <TableCell>
                     {(() => {
-                      const stock = getStockByLocation(product, location);
+                      const stock = getAvailableStockByLocation(product, location);
                       return (
                         <div className="flex flex-col gap-1">
                           <span className="font-medium">{stock}</span>

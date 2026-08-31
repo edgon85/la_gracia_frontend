@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { getExpiringBatchesAction } from '@/actions/product.actions';
 import { IExpiringBatch } from '@/lib';
+import { todayInGuatemala } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -72,12 +73,11 @@ export function ExpiringBatchesPage({
     fetchBatches();
   }, [days, location]);
 
+  // Días calendario entre hoy (TZ Guatemala) y la fecha de vencimiento
   const getDaysUntilExpiry = (expiryDate: string) => {
-    const today = new Date();
-    const expiry = new Date(expiryDate);
-    const diffTime = expiry.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+    const today = new Date(`${todayInGuatemala()}T00:00:00Z`);
+    const expiry = new Date(`${expiryDate.slice(0, 10)}T00:00:00Z`);
+    return Math.round((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   };
 
   const getStatusBadge = (expiryDate: string) => {

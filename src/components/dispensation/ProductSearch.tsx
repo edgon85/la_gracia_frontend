@@ -10,6 +10,10 @@ import { getProductsAction } from '@/actions/product.actions';
 import { IProduct } from '@/lib';
 import { useDispensationStore } from '@/stores';
 import { useDebounce } from '@/hooks/useDebounce';
+import {
+  getAvailableBatchesByLocation,
+  getAvailableStockByLocation,
+} from '@/lib/utils';
 
 interface ProductSearchProps {
   location?: 'farmacia' | 'bodega';
@@ -18,17 +22,6 @@ interface ProductSearchProps {
 // Convertir location a mayúsculas para el backend
 const toBackendLocation = (loc: 'farmacia' | 'bodega'): 'FARMACIA' | 'BODEGA' => {
   return loc.toUpperCase() as 'FARMACIA' | 'BODEGA';
-};
-
-// Calcular stock por ubicación
-const getStockByLocation = (product: IProduct, loc?: 'farmacia' | 'bodega'): number => {
-  if (!loc) {
-    return product.totalStock;
-  }
-  const backendLocation = loc.toUpperCase() as 'FARMACIA' | 'BODEGA';
-  return product.batches
-    .filter((batch) => batch.location === backendLocation && batch.status === 'ACTIVE')
-    .reduce((sum, batch) => sum + batch.quantity, 0);
 };
 
 export function ProductSearch({ location }: ProductSearchProps) {
@@ -91,7 +84,7 @@ export function ProductSearch({ location }: ProductSearchProps) {
   }, []);
 
   const handleAddProduct = (product: IProduct) => {
-    const stock = getStockByLocation(product, location);
+    const stock = getAvailableStockByLocation(product, location);
     if (stock <= 0) return;
     addItem(product, 1);
     setSearch('');
@@ -123,15 +116,13 @@ export function ProductSearch({ location }: ProductSearchProps) {
         <Card className="absolute top-full left-0 right-0 mt-1 z-50 max-h-96 overflow-y-auto shadow-lg">
           <div className="p-2 space-y-1">
             {results.map((product) => {
-              // Filtrar lotes por ubicación para obtener el precio correcto
+              // Filtrar lotes despachables por ubicación para obtener el precio correcto
               const locationBatches = location
-                ? product.batches.filter(
-                    (b) => b.location === toBackendLocation(location) && b.status === 'ACTIVE'
-                  )
+                ? getAvailableBatchesByLocation(product, location)
                 : product.batches;
               const mainBatch = locationBatches[0] || product.batches[0];
               const price = mainBatch?.salePrice || '0.00';
-              const stock = getStockByLocation(product, location);
+              const stock = getAvailableStockByLocation(product, location);
               const hasStock = stock > 0;
 
               return (

@@ -50,7 +50,7 @@ Uses **shadcn/ui** component library (configured in [components.json](components
 - Base color: neutral
 - Icon library: lucide-react
 - Components in `src/components/ui/`
-- Utilities in `src/lib/utils.ts`: `cn()` and `formatBytes()` (bytes → B/KB/MB/… labels)
+- Utilities in `src/lib/utils.ts`: `cn()`, `formatBytes()` (bytes → B/KB/MB/… labels), date helpers (`todayInGuatemala()`, `isExpiredDate()`, `minExpiryDate()`) and stock helpers (`getAvailableStockByLocation()`, `getAvailableBatchesByLocation()`)
 - Toasts: **sonner** (`import { toast } from 'sonner'`); `<Toaster />` is mounted once in the root layout
 - Tables: use shadcn `Table` primitives directly (no generic DataTable abstraction); destructive confirmations use shadcn `AlertDialog`
 
@@ -93,7 +93,9 @@ Uses **shadcn/ui** component library (configured in [components.json](components
 - **Server actions** ([src/actions/product.actions.ts](src/actions/product.actions.ts)): `getExpiringBatchesAction(days, location)` → `GET /products/batches/expiring?days&location`; `getExpiredBatchesAction(location)` → `GET /products/alerts/expired?location`. Both uppercase `location` before sending and return `IExpiringBatch[]` (or `{ error }`). **Both also filter the response client-side by `batch.location`** — the backend ignores the `location` query param on these endpoints; keep the defensive filter.
 - When adding either page/route, remember the permissions step above (`ROUTE_TO_MODULE`/`ROUTE_TO_ACTION`) plus a sidebar sub-item in [src/components/layout/sidebar.tsx](src/components/layout/sidebar.tsx).
 - The sidebar fetches expired counts per location (via `getExpiredBatchesAction`) in a `useEffect` keyed on `pathname` and injects them as red `badge` pills on the "Vencidos" sub-items.
-- **Batch `status` is stale**: the backend only recalculates it on writes, so an expired batch may still say `ACTIVE`/`NEAR_EXPIRY`. Never use `status` to decide expiry — compare `expiryDate` against today with `isExpiredDate()` from [src/lib/utils.ts](src/lib/utils.ts) (string compare on `"YYYY-MM-DD"`). `minExpiryDate()` (tomorrow) is the `min` attr for expiry date inputs; all three batch-creating forms (`AddBatchModal`, `AddProductOrBatch`, `ProductForm`) reject expired dates via a zod `.refine`.
+- **Batch `status` is stale**: the backend only recalculates it on writes, so an expired batch may still say `ACTIVE`/`NEAR_EXPIRY` (and vice versa). Never use `status` to decide expiry OR to compute available stock — use `isExpiredDate()` / `getAvailableStockByLocation()` / `getAvailableBatchesByLocation()` from [src/lib/utils.ts](src/lib/utils.ts).
+- **Expiry semantics (matches the backend)**: a batch is usable/dispensable up to and INCLUDING its `expiryDate`; it counts as expired starting the NEXT day. `isExpiredDate(val)` is `val < todayInGuatemala()` (string compare on `"YYYY-MM-DD"`). All date logic uses the **Guatemala timezone** (`America/Guatemala`, via `todayInGuatemala()`), never `new Date().toISOString()` (UTC rolls the date forward at 18:00 local). The backend mirrors this in `src/common/utils/date.util.ts` (`isExpired()` on `ProductBatch` and all expiry SQL boundaries use `< today` / `>= today` with the Guatemala date).
+- `minExpiryDate()` (tomorrow in Guatemala) is the `min` attr for expiry date inputs; all three batch-creating forms (`AddBatchModal`, `AddProductOrBatch`, `ProductForm`) reject expired dates via a zod `.refine`.
 
 ### Inventory Write-off (Baja) — EXPIRED / DAMAGED / LOST
 

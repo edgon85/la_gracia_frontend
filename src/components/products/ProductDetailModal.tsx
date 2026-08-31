@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { IProduct, IBatch } from '@/lib';
 import { usePermissions } from '@/hooks/usePermissions';
-import { isExpiredDate } from '@/lib/utils';
+import { getAvailableStockByLocation, isExpiredDate } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -57,17 +57,8 @@ export function ProductDetailModal({
     ? product.batches.filter(batch => batch.location === location.toUpperCase())
     : product.batches;
 
-  // Calcular stock por ubicación (excluye vencidos por fecha, igual que el backend)
-  const locationStock = location
-    ? filteredBatches
-        .filter(
-          batch =>
-            batch.isActive &&
-            batch.quantity > 0 &&
-            !isExpiredDate(batch.expiryDate.slice(0, 10))
-        )
-        .reduce((sum, batch) => sum + batch.quantity, 0)
-    : product.totalStock;
+  // Stock por ubicación (excluye vencidos por fecha, igual que el backend)
+  const locationStock = getAvailableStockByLocation(product, location);
 
   const formatPrice = (price: string) => {
     return `Q${parseFloat(price).toFixed(2)}`;

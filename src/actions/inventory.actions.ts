@@ -243,6 +243,7 @@ export async function getProductMovementsAction(
     );
 
     if (!response.ok) {
+      console.log('Error response:', response);
       const errorData = await response.json();
       return {
         error: errorData.message || 'Error al obtener movimientos del producto',
