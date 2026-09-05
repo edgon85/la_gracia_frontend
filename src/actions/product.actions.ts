@@ -10,6 +10,7 @@ import {
   IBatch,
   IProductStats,
   IExpiringBatch,
+  IUpdateBatchPricesRequest,
 } from '@/lib';
 import { getToken } from './auth.actions';
 
@@ -288,6 +289,53 @@ export async function addBatchToProductAction(
     return { success: true, batch };
   } catch (error) {
     console.error('Error adding batch:', error);
+    return {
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+/**
+ * Actualiza el precio de compra/venta de un lote individual
+ * PATCH /products/batches/:batchId
+ */
+export async function updateBatchPricesAction(
+  batchId: string,
+  data: IUpdateBatchPricesRequest,
+): Promise<{ success: true; batch: IBatch } | { error: string }> {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      return { error: 'No autenticado' };
+    }
+
+    // Enviar solo los campos definidos
+    const body = Object.fromEntries(
+      Object.entries(data).filter(([, value]) => value !== undefined),
+    );
+
+    const response = await fetch(`${API_URL}/products/batches/${batchId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return {
+        error: errorData.message || 'Error al actualizar el precio del lote',
+      };
+    }
+
+    const batch: IBatch = await response.json();
+    return { success: true, batch };
+  } catch (error) {
+    console.error('Error updating batch prices:', error);
     return {
       error: error instanceof Error ? error.message : 'Error desconocido',
     };

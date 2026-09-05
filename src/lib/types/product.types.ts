@@ -258,6 +258,12 @@ export interface ICreateBatchRequest {
   notes?: string;
 }
 
+// Edición de precios de un lote (PATCH /products/batches/:batchId)
+export interface IUpdateBatchPricesRequest {
+  purchasePrice?: number;
+  salePrice?: number;
+}
+
 export interface IUpdateProductRequest {
   internalCode?: string;
   commercialName?: string;

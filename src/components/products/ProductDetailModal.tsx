@@ -23,8 +23,10 @@ import {
   Pill,
   Plus,
   PackageMinus,
+  Tag,
 } from 'lucide-react';
 import { AddBatchModal } from './AddBatchModal';
+import { EditBatchPriceModal } from './EditBatchPriceModal';
 import { WriteOffBatchModal } from '@/components/inventory/WriteOffBatchModal';
 
 interface ProductDetailModalProps {
@@ -45,12 +47,26 @@ export function ProductDetailModal({
   const [isAddBatchOpen, setIsAddBatchOpen] = useState(false);
   const [writeOffBatch, setWriteOffBatch] = useState<IBatch | null>(null);
   const [isWriteOffOpen, setIsWriteOffOpen] = useState(false);
-  const { isAdmin } = usePermissions();
+  const [editPriceBatch, setEditPriceBatch] = useState<IBatch | null>(null);
+  const [isEditPriceOpen, setIsEditPriceOpen] = useState(false);
+  const { isAdmin, canEdit } = usePermissions();
 
   if (!product) return null;
 
   const canWriteOffBatch = (batch: IBatch) =>
     batch.quantity > 0 && batch.isActive && isAdmin;
+
+  // Mismo criterio que el badge "Agotado": sin cantidad no hay precio que editar
+  const isDepleted = (batch: IBatch) =>
+    batch.quantity <= 0 || batch.status === 'DEPLETED';
+
+  // Vencimiento por fecha (status puede venir desactualizado)
+  const isBatchExpired = (batch: IBatch) =>
+    isExpiredDate(batch.expiryDate.slice(0, 10));
+
+  // Solo lotes con existencias y vigentes pueden cambiar de precio
+  const canEditBatchPrice = (batch: IBatch) =>
+    canEdit('products') && !isDepleted(batch) && !isBatchExpired(batch);
 
   // Filtrar lotes por ubicación si se especifica
   const filteredBatches = location
@@ -85,10 +101,10 @@ export function ProductDetailModal({
   // status puede venir desactualizado (solo se recalcula al escribir);
   // el vencimiento se decide en vivo por fecha
   const getBatchStatus = (batch: IBatch) => {
-    if (batch.quantity <= 0 || batch.status === 'DEPLETED') {
+    if (isDepleted(batch)) {
       return <Badge variant="secondary">Agotado</Badge>;
     }
-    if (isExpiredDate(batch.expiryDate.slice(0, 10))) {
+    if (isBatchExpired(batch)) {
       return <Badge variant="destructive">Vencido</Badge>;
     }
     if (batch.status === 'NEAR_EXPIRY') {
@@ -276,6 +292,20 @@ export function ProductDetailModal({
                       <span className="font-medium">Lote: {batch.batchNumber}</span>
                       <div className="flex items-center gap-2">
                         {getBatchStatus(batch)}
+                        {canEditBatchPrice(batch) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7"
+                            onClick={() => {
+                              setEditPriceBatch(batch);
+                              setIsEditPriceOpen(true);
+                            }}
+                          >
+                            <Tag className="h-4 w-4 mr-1" />
+                            Editar precio
+                          </Button>
+                        )}
                         {canWriteOffBatch(batch) && (
                           <Button
                             variant="ghost"
@@ -344,6 +374,17 @@ export function ProductDetailModal({
         productName={product.commercialName}
         open={isAddBatchOpen}
         onOpenChange={setIsAddBatchOpen}
+        onSuccess={onBatchAdded}
+      />
+
+      <EditBatchPriceModal
+        batch={editPriceBatch}
+        productName={product.commercialName}
+        open={isEditPriceOpen}
+        onOpenChange={(open) => {
+          setIsEditPriceOpen(open);
+          if (!open) setEditPriceBatch(null);
+        }}
         onSuccess={onBatchAdded}
       />
 
